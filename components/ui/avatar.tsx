@@ -66,6 +66,7 @@ const AvatarImage = React.forwardRef<HTMLImageElement, AvatarImageProps>(
           {...(shouldFill ? { fill: true } : {})}
           onLoadingComplete={handleLoadingComplete}
           onError={handleError}
+          alt={props.alt || "Avatar"}
         />
       </>
     );

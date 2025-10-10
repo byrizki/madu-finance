@@ -409,7 +409,7 @@ export function TransactionCard({ transaction, className, onEdit, onDelete }: Tr
             <AlertDialogHeader>
               <AlertDialogTitle>Hapus transaksi?</AlertDialogTitle>
               <AlertDialogDescription>
-                Tindakan ini akan menghapus transaksi "{transaction.title}" secara permanen. Anda tidak dapat
+                Tindakan ini akan menghapus transaksi &quot;{transaction.title}&quot; secara permanen. Anda tidak dapat
                 mengurungkan proses ini.
               </AlertDialogDescription>
             </AlertDialogHeader>

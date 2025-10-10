@@ -1,5 +1,10 @@
 import WalletClient from "./rcc/wallet-client";
+import { Suspense } from "react";
 
 export default function WalletPage() {
-  return <WalletClient />;
+  return (
+    <Suspense fallback={null}>
+      <WalletClient />
+    </Suspense>
+  );
 }

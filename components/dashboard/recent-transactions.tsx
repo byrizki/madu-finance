@@ -62,7 +62,7 @@ export function RecentTransactions({ transactions, isLoading, error }: RecentTra
       ) : (
         <div className="space-y-2.5">
           {items.map((transaction) => (
-            <TransactionCard key={transaction.id} transaction={transaction} layout="compact" />
+            <TransactionCard key={transaction.id} transaction={transaction} />
           ))}
         </div>
       )}

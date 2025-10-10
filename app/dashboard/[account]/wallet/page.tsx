@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import WalletClient from "../../wallet/rcc/wallet-client";
 
 interface WalletPageProps {
@@ -6,5 +7,9 @@ interface WalletPageProps {
 
 export default async function WalletPage({ params }: WalletPageProps) {
   const { account } = await params;
-  return <WalletClient accountSlugOverride={account} />;
+  return (
+    <Suspense fallback={null}>
+      <WalletClient accountSlugOverride={account} />
+    </Suspense>
+  );
 }
