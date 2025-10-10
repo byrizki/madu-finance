@@ -15,7 +15,7 @@ const navItems = [
   },
   {
     name: "Transaksi & Laporan",
-    href: "/dashboard/budgets",
+    href: "/dashboard/transactions",
     icon: FileText,
   },
   {

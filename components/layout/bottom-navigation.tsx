@@ -17,7 +17,7 @@ const navItems = [
   },
   {
     name: "Anggaran & Transaksi",
-    segment: "budgets",
+    segment: "transactions",
     icon: FileText,
   },
   {
@@ -116,7 +116,7 @@ function createMotionConfig() {
 export function BottomNavigation() {
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean);
-  const staticTargets = new Set(["budgets", "wallet", "profile"]);
+  const staticTargets = new Set(["transactions", "wallet", "profile"]);
   const isMounted = useIsMounted();
   const [animationRun, setAnimationRun] = useState(false);
 

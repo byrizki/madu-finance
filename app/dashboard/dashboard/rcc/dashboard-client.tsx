@@ -107,7 +107,7 @@ export default function DashboardClient({ accountSlugOverride }: DashboardClient
           transactions={sortedTransactions}
           transactionsLoading={transactionsSkeletonLoading}
           transactionsError={transactionsError}
-          onViewAllTransactions={() => router.push("/dashboard/budgets?transactions")}
+          onViewAllTransactions={() => router.push("/dashboard/transactions?transactions")}
         />
 
         <QuickTransactionSheet

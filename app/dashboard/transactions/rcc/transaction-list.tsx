@@ -119,7 +119,7 @@ export function TransactionList({
 
       {isLoading ? (
         <div className="space-y-2.5">
-          {Array.from({ length: 3 }).map((_, index) => (
+          {Array.from({ length: 2 }).map((_, index) => (
             <Card key={`skeleton-group-${index}`} className="border border-border/50 bg-card/80 shadow-none">
               <CardContent className="space-y-2.5 p-3.5">
                 <div className="flex justify-between">

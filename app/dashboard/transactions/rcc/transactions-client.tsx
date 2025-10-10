@@ -34,7 +34,7 @@ export default function BudgetsClient({ accountSlugOverride }: BudgetsClientProp
   const pathname = usePathname();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"budgets" | "transactions">(() =>
-    searchParams.has("transactions") ? "transactions" : "budgets"
+    searchParams.has("budgets") ? "budgets" : "transactions"
   );
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Semua Kategori");
@@ -67,7 +67,7 @@ export default function BudgetsClient({ accountSlugOverride }: BudgetsClientProp
   const showAccountPlaceholder = !isAccountResolved && !isDefaultAccountLoading;
 
   useEffect(() => {
-    setActiveTab(searchParams.has("transactions") ? "transactions" : "budgets");
+    setActiveTab(searchParams.has("budgets") ? "budgets" : "transactions");
   }, [searchParams]);
 
   const handleTabChange = (value: string) => {
@@ -75,11 +75,11 @@ export default function BudgetsClient({ accountSlugOverride }: BudgetsClientProp
     setActiveTab(nextTab);
 
     const params = new URLSearchParams(searchParams.toString());
-    params.delete("transactions");
+    params.delete("budgets");
     const baseQuery = params.toString();
     const target =
-      nextTab === "transactions"
-        ? `${pathname}?${baseQuery ? `${baseQuery}&` : ""}transactions`
+      nextTab === "budgets"
+        ? `${pathname}?${baseQuery ? `${baseQuery}&` : ""}budgets`
         : baseQuery
         ? `${pathname}?${baseQuery}`
         : pathname;
@@ -154,7 +154,7 @@ export default function BudgetsClient({ accountSlugOverride }: BudgetsClientProp
           showAccountPlaceholder ? "pointer-events-none blur-sm max-h-[calc(100vh-12rem)]" : undefined
         )}
       >
-        {unauthorizedError && <UnauthorizedAccessDialog open onRedirect={() => router.replace("/dashboard/budgets")} />}
+        {unauthorizedError && <UnauthorizedAccessDialog open onRedirect={() => router.replace("/dashboard/transactions")} />}
         <BudgetHeader
           activeTab={activeTab}
           onOpenBudgetModal={() => setIsBudgetModalOpen(true)}
@@ -165,11 +165,11 @@ export default function BudgetsClient({ accountSlugOverride }: BudgetsClientProp
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList>
-            <TabsTrigger value="budgets" className="px-6">
-              Anggaran
-            </TabsTrigger>
             <TabsTrigger value="transactions" className="px-4">
               Transaksi
+            </TabsTrigger>
+            <TabsTrigger value="budgets" className="px-6">
+              Anggaran
             </TabsTrigger>
           </TabsList>
 

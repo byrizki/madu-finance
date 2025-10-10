@@ -5,7 +5,7 @@ byMADU is a personal finance dashboard built with Next.js that helps individuals
 
 ## Key Features
 - **Adaptive dashboard summary**: `DashboardClient` in `app/dashboard/dashboard/rcc/dashboard-client.tsx` aggregates wallet balances, monthly activity, and installment exposure with the option to mask values via `ShowValuesProvider`.
-- **Granular budget control**: `BudgetsClient` in `app/dashboard/budgets/rcc/budgets-client.tsx` exposes multi-tab analytics, saved filters, and quick actions for new budgets and transactions.
+- **Granular transaction control**: `TransactionsClient` in `app/dashboard/transactions/rcc/transactions-client.tsx` exposes multi-tab analytics, saved filters, and quick actions for new transactions and budgets.
 - **Inline transaction logging**: `QuickTransactionSheet` (`components/transactions/quick-transaction-sheet.tsx`) enables fast income/expense capture without navigating away.
 - **Shared account collaboration**: `MemberProvider` (`components/context/member-context.tsx`) coordinates shared accounts, member roles, and switching between active members.
 - **Integrated authentication**: `lib/auth/index.ts` configures `better-auth` for email/password and Google Sign-In, while `middleware.ts` gates `/dashboard` routes for authenticated sessions only.
@@ -27,7 +27,7 @@ app/
   dashboard/
     page.tsx                  # Entry point rendering the dashboard client
     dashboard/rcc/            # Dashboard-specific client components & utilities
-    budgets/rcc/              # Budget analytics, filters, quick actions
+    transactions/rcc/         # Transaction analytics, filters, quick actions
 components/
   dashboard/                  # Shared dashboard widgets and masked value UI
   transactions/               # Transaction sheets and forms

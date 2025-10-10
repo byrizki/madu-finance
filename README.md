@@ -5,7 +5,7 @@ byMADU adalah aplikasi keuangan pribadi berbasis Next.js yang membantu pengguna 
 
 ## Core Features
 - **Ringkasan dasbor yang adaptif**: Komponen `DashboardClient` di `app/dashboard/dashboard/rcc/dashboard-client.tsx` menampilkan metrik saldo, tagihan, dan aktivitas transaksi secara dinamis, lengkap dengan opsi sembunyikan/tampilkan nilai (`ShowValuesProvider`).
-- **Manajemen anggaran detail**: Halaman `app/dashboard/budgets/rcc/budgets-client.tsx` menghadirkan analitik anggaran, filter transaksi lanjutan, serta lembar aksi cepat untuk menambah transaksi dan anggaran baru.
+- **Manajemen transaksi detail**: Halaman `app/dashboard/transactions/rcc/transactions-client.tsx` menghadirkan analitik transaksi, filter transaksi lanjutan, serta lembar aksi cepat untuk menambah transaksi dan anggaran baru.
 - **Pencatatan transaksi instan**: Komponen `QuickTransactionSheet` di `components/transactions/quick-transaction-sheet.tsx` memungkinkan penambahan pemasukan/pengeluaran tanpa meninggalkan halaman aktif.
 - **Kolaborasi multi-anggota**: `MemberProvider` pada `components/context/member-context.tsx` mengelola akun bersama, peran anggota, dan perpindahan profil secara mulus.
 - **Autentikasi terintegrasi**: `better-auth` dikonfigurasi di `lib/auth/index.ts` untuk login email/password dan Google One Tap, dilindungi middleware `middleware.ts` agar rute `/dashboard` hanya dapat diakses pengguna terautentikasi.
@@ -26,7 +26,7 @@ app/
   login/page.tsx            # Autentikasi email & Google One Tap
   dashboard/
     page.tsx                # Server entry -> klien dashboard
-    budgets/                # Rute anggaran & transaksi
+    transactions/           # Rute transaksi
     dashboard/              # Komponen dasbor (client-side)
 components/
   dashboard/                # Widget ringkasan & transaksi terbaru
