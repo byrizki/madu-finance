@@ -9,7 +9,7 @@ const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXT_PUBLIC_SITE_
 
 export const auth = betterAuth({
   baseURL: baseUrl,
-  trustedOrigins: [baseUrl, "https://5000.refind.id"],
+  trustedOrigins: [baseUrl, "https://5000.refind.id", "https://madu.refind.id"],
   database: drizzleAdapter(db, {
     provider: "pg",
     schema,
