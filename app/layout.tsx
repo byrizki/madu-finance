@@ -16,7 +16,11 @@ const fontQuicksand = Quicksand({
 export const metadata: Metadata = {
   title: "byMADU - Kelola Keuangan Anda",
   description: "Aplikasi keuangan personal untuk mengelola anggaran dan transaksi Anda",
-  generator: "v0.app",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/site.webmanifest",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
