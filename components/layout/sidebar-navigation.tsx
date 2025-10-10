@@ -1,9 +1,11 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Home, FileText, Wallet, User, LogOut } from "lucide-react"
-import { cn } from "@/lib/utils"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Home, FileText, Wallet, User } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { motion, LayoutGroup } from "motion/react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const navItems = [
   {
@@ -13,75 +15,67 @@ const navItems = [
   },
   {
     name: "Transaksi & Laporan",
-    href: "/transactions",
+    href: "/dashboard/budgets",
     icon: FileText,
   },
   {
     name: "Dompet",
-    href: "/wallet",
+    href: "/dashboard/wallet",
     icon: Wallet,
   },
   {
     name: "Profil",
-    href: "/profile",
+    href: "/dashboard/profile",
     icon: User,
   },
-]
+];
 
 export function SidebarNavigation() {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   return (
-    <nav className="w-64 flex-col bg-card/95 backdrop-blur-sm border-r border-border flex">
-      <div className="flex flex-col h-full">
-        {/* Logo */}
-        <div className="flex items-center px-6 py-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Wallet className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">FinanceApp</span>
-          </div>
-        </div>
+    <nav className="flex w-20 flex-col items-center border border-border/40 bg-background/90 py-6 backdrop-blur-sm shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+      <LayoutGroup>
+        <ul className="flex flex-1 flex-col items-center gap-4">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || (item.href === "/transactions" && pathname === "/budget");
+            const Icon = item.icon;
 
-        {/* Navigation Items */}
-        <div className="flex-1 px-4 overflow-y-auto">
-          <ul className="space-y-2">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href || (item.href === "/transactions" && pathname === "/budget")
-              const Icon = item.icon
-
-              return (
-                <li key={item.name}>
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      "flex items-center px-4 py-3 rounded-lg transition-colors group",
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted",
-                    )}
-                  >
-                    <Icon className="h-5 w-5 mr-3" />
-                    <span className="font-medium">{item.name}</span>
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-
-        {/* Logout */}
-        <div className="px-4 pb-6">
-          <Link
-            href="/login"
-            className="flex items-center px-4 py-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors group"
-          >
-            <LogOut className="h-5 w-5 mr-3" />
-            <span className="font-medium">Keluar</span>
-          </Link>
-        </div>
-      </div>
+            return (
+              <li key={item.name}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "relative flex h-12 w-12 items-center justify-center rounded-2xl transition-colors",
+                        isActive ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {isActive ? (
+                        <motion.span
+                          layoutId="sidebar-active"
+                          className="absolute inset-0 rounded-2xl bg-primary shadow-[0_6px_16px_rgba(0,0,0,0.12)]"
+                          transition={{
+                            type: "spring",
+                            stiffness: 360,
+                            damping: 28,
+                          }}
+                        />
+                      ) : null}
+                      <Icon className="relative z-10 h-5 w-5" />
+                      <span className="sr-only">{item.name}</span>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={10}>
+                    {item.name}
+                  </TooltipContent>
+                </Tooltip>
+              </li>
+            );
+          })}
+        </ul>
+      </LayoutGroup>
     </nav>
-  )
+  );
 }

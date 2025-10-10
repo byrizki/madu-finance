@@ -1,13 +1,18 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { ChevronDown } from "lucide-react"
-import { useMember } from "@/components/context/member-context"
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ChevronDown } from "lucide-react";
+import { useMember } from "@/components/context/member-context";
 
 export function MemberSelector() {
-  const { currentMember, members, switchMember } = useMember()
+  const { currentMember, members, switchMember } = useMember();
 
   return (
     <DropdownMenu>
@@ -52,5 +57,5 @@ export function MemberSelector() {
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

@@ -4,88 +4,108 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Updated to soft pastel colors for light theme */
-  --background: oklch(0.99 0.005 120); /* Very light mint */
-  --foreground: oklch(0.25 0.02 240); /* Soft dark blue-gray */
-  --card: oklch(0.98 0.008 180); /* Soft white with hint of cyan */
-  --card-foreground: oklch(0.25 0.02 240);
-  --popover: oklch(0.98 0.008 180);
-  --popover-foreground: oklch(0.25 0.02 240);
-  --primary: oklch(0.65 0.15 260); /* Soft lavender */
-  --primary-foreground: oklch(0.98 0.005 260);
-  --secondary: oklch(0.92 0.02 200); /* Soft powder blue */
-  --secondary-foreground: oklch(0.35 0.03 240);
-  --muted: oklch(0.94 0.015 160); /* Soft mint */
-  --muted-foreground: oklch(0.55 0.02 220);
-  --accent: oklch(0.75 0.12 160); /* Soft sage green */
-  --accent-foreground: oklch(0.98 0.005 160);
-  --destructive: oklch(0.68 0.15 15); /* Soft coral */
-  --destructive-foreground: oklch(0.98 0.005 15);
-  --border: oklch(0.88 0.02 200); /* Soft blue-gray border */
-  --input: oklch(0.95 0.01 180);
-  --ring: oklch(0.65 0.15 260);
-  --chart-1: oklch(0.7 0.12 260); /* Soft purple */
-  --chart-2: oklch(0.72 0.1 160); /* Soft green */
-  --chart-3: oklch(0.68 0.15 40); /* Soft yellow */
-  --chart-4: oklch(0.7 0.12 320); /* Soft pink */
-  --chart-5: oklch(0.65 0.1 200); /* Soft blue */
+  /* Clean, minimal light theme */
+  --background: oklch(0.995 0.002 210); /* Soft neutral white */
+  --foreground: oklch(0.24 0.047 250); /* Charcoal navy */
+  --card: oklch(1 0 0); /* Pure white */
+  --card-foreground: oklch(0.26 0.05 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.24 0.047 250);
+  --primary: oklch(0.63 0.14 210); /* Calm teal */
+  --primary-foreground: oklch(0.99 0.005 210);
+  --secondary: oklch(0.95 0.01 250); /* Subtle cool gray */
+  --secondary-foreground: oklch(0.33 0.03 250);
+  --muted: oklch(0.96 0.005 220); /* Misty neutral */
+  --muted-foreground: oklch(0.55 0.015 240);
+  --accent: oklch(0.9 0.09 85); /* Soft honey accent */
+  --accent-foreground: oklch(0.24 0.04 65); /* Warm contrast */
+  --destructive: oklch(0.72 0.17 25); /* Clean tomato */
+  --destructive-foreground: oklch(0.99 0.01 25);
+  --border: oklch(0.9 0.01 240); /* Soft outline */
+  --input: oklch(0.95 0.006 230);
+  --ring: oklch(0.63 0.14 210);
+  --chart-1: oklch(0.9 0.09 85); /* Soft honey */
+  --chart-2: oklch(0.84 0.1 72); /* Light pollen */
+  --chart-3: oklch(0.8 0.08 60); /* Gentle amber */
+  --chart-4: oklch(0.5 0.03 260); /* Dusky slate */
+  --chart-5: oklch(0.97 0.015 95); /* Light cream */
   --radius: 0.75rem;
-  --sidebar: oklch(0.96 0.01 220);
-  --sidebar-foreground: oklch(0.3 0.02 240);
-  --sidebar-primary: oklch(0.65 0.15 260);
-  --sidebar-primary-foreground: oklch(0.98 0.005 260);
-  --sidebar-accent: oklch(0.92 0.02 200);
-  --sidebar-accent-foreground: oklch(0.35 0.03 240);
-  --sidebar-border: oklch(0.88 0.02 200);
-  --sidebar-ring: oklch(0.65 0.15 260);
+  --sidebar: oklch(0.985 0.004 220);
+  --sidebar-foreground: oklch(0.28 0.045 250);
+  --sidebar-primary: oklch(0.63 0.14 210);
+  --sidebar-primary-foreground: oklch(0.99 0.005 210);
+  --sidebar-accent: oklch(0.92 0.07 85);
+  --sidebar-accent-foreground: oklch(0.3 0.05 65);
+  --sidebar-border: oklch(0.9 0.01 240);
+  --sidebar-ring: oklch(0.63 0.14 210);
+  --bee: #f5bf49;
+}
+
+@keyframes shiver {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(-1deg) scale(1);
+  }
+  25% {
+    transform: translate3d(1px, -1px, 0) rotate(1deg) scale(1.01);
+  }
+  50% {
+    transform: translate3d(-1px, 1px, 0) rotate(-1.5deg) scale(0.99);
+  }
+  75% {
+    transform: translate3d(1px, 1px, 0) rotate(1.5deg) scale(1.01);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-1deg) scale(1);
+  }
 }
 
 .dark {
-  /* Enhanced dark theme with soft pastel colors */
-  --background: oklch(0.12 0.015 240); /* Deep navy with hint of blue */
-  --foreground: oklch(0.92 0.01 60); /* Soft warm white */
-  --card: oklch(0.15 0.02 240); /* Slightly lighter navy */
-  --card-foreground: oklch(0.92 0.01 60);
-  --popover: oklch(0.15 0.02 240);
-  --popover-foreground: oklch(0.92 0.01 60);
-  --primary: oklch(0.7 0.12 280); /* Soft lavender for dark */
-  --primary-foreground: oklch(0.12 0.015 240);
-  --secondary: oklch(0.22 0.03 220); /* Soft dark blue */
-  --secondary-foreground: oklch(0.88 0.01 60);
-  --muted: oklch(0.2 0.02 240);
-  --muted-foreground: oklch(0.65 0.01 60);
-  --accent: oklch(0.65 0.1 160); /* Soft mint for dark */
-  --accent-foreground: oklch(0.12 0.015 160);
-  --destructive: oklch(0.6 0.12 20); /* Soft coral for dark */
-  --destructive-foreground: oklch(0.95 0.005 20);
-  --border: oklch(0.25 0.02 240);
-  --input: oklch(0.2 0.02 240);
-  --ring: oklch(0.7 0.12 280);
-  --chart-1: oklch(0.75 0.1 280); /* Soft purple for dark */
-  --chart-2: oklch(0.7 0.08 160); /* Soft green for dark */
-  --chart-3: oklch(0.72 0.12 60); /* Soft yellow for dark */
-  --chart-4: oklch(0.68 0.1 340); /* Soft pink for dark */
-  --chart-5: oklch(0.65 0.08 220); /* Soft blue for dark */
-  --sidebar: oklch(0.1 0.02 240);
-  --sidebar-foreground: oklch(0.9 0.01 60);
-  --sidebar-primary: oklch(0.7 0.12 280);
-  --sidebar-primary-foreground: oklch(0.1 0.02 240);
-  --sidebar-accent: oklch(0.22 0.03 220);
-  --sidebar-accent-foreground: oklch(0.88 0.01 60);
-  --sidebar-border: oklch(0.25 0.02 240);
-  --sidebar-ring: oklch(0.7 0.12 280);
+  /* Clean, balanced dark theme */
+  --background: oklch(0.2 0.03 248); /* Softened midnight */
+  --foreground: oklch(0.94 0.01 85); /* Pale ivory */
+  --card: oklch(0.24 0.035 248);
+  --card-foreground: oklch(0.94 0.01 85);
+  --popover: oklch(0.24 0.035 248);
+  --popover-foreground: oklch(0.94 0.01 85);
+  --primary: oklch(0.68 0.15 210); /* Calm teal glow */
+  --primary-foreground: oklch(0.17 0.045 250);
+  --secondary: oklch(0.33 0.04 245); /* Muted steel */
+  --secondary-foreground: oklch(0.9 0.01 88);
+  --muted: oklch(0.27 0.025 250);
+  --muted-foreground: oklch(0.72 0.018 240);
+  --accent: oklch(0.7 0.1 85); /* Gentle honey glow */
+  --accent-foreground: oklch(0.2 0.035 265);
+  --destructive: oklch(0.55 0.14 30);
+  --destructive-foreground: oklch(0.95 0.01 90);
+  --border: oklch(0.32 0.025 255);
+  --input: oklch(0.27 0.025 250);
+  --ring: oklch(0.68 0.15 210);
+  --chart-1: oklch(0.72 0.12 85);
+  --chart-2: oklch(0.65 0.1 72);
+  --chart-3: oklch(0.52 0.08 58);
+  --chart-4: oklch(0.38 0.03 260);
+  --chart-5: oklch(0.8 0.02 95);
+  --sidebar: oklch(0.18 0.03 248);
+  --sidebar-foreground: oklch(0.92 0.01 88);
+  --sidebar-primary: oklch(0.68 0.15 210);
+  --sidebar-primary-foreground: oklch(0.17 0.045 250);
+  --sidebar-accent: oklch(0.38 0.035 70);
+  --sidebar-accent-foreground: oklch(0.92 0.015 95);
+  --sidebar-border: oklch(0.32 0.025 255);
+  --sidebar-ring: oklch(0.68 0.15 210);
+  --bee: #f5bf49;
 }
 
 @theme inline {
   --font-sans: var(--font-quicksand);
 
   /* Updated finance-specific soft pastel colors */
-  --color-success: oklch(0.75 0.12 160); /* Soft sage green for positive values */
-  --color-success-foreground: oklch(0.98 0.005 160);
-  --color-warning: oklch(0.78 0.15 80); /* Soft peach for warnings */
-  --color-warning-foreground: oklch(0.98 0.005 80);
-  --color-info: oklch(0.7 0.1 220); /* Soft sky blue for info */
-  --color-info-foreground: oklch(0.98 0.005 220);
+  --color-success: oklch(0.7 0.11 160); /* Clean success */
+  --color-success-foreground: oklch(0.99 0.006 160);
+  --color-warning: oklch(0.78 0.14 80); /* Soft amber */
+  --color-warning-foreground: oklch(0.99 0.006 80);
+  --color-info: oklch(0.68 0.14 210); /* Clear sky */
+  --color-info-foreground: oklch(0.99 0.006 210);
 
   /* Map to design tokens */
   --color-background: var(--background);
@@ -124,6 +144,7 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-bee: var(--bee);
 }
 
 /* Enhanced scrollbar styling for both themes */
@@ -143,11 +164,6 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-muted-foreground);
-}
-
-/* Improved transitions for theme switching */
-* {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 /* Updated layout classes for proper scroll behavior */
@@ -190,5 +206,47 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .landing-cta {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .landing-cta::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      120deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.2) 35%,
+      rgba(255, 255, 255, 0.6) 50%,
+      rgba(255, 255, 255, 0.2) 65%,
+      transparent 100%
+    );
+    transform: translateX(-100%);
+    animation: shimmer-move 2.2s infinite;
+    z-index: 0;
+    opacity: 0.9;
+  }
+
+  .animate-shiver {
+    animation: shiver 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes shimmer-move {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(150%);
   }
 }

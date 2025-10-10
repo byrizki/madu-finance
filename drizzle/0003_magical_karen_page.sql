@@ -1,0 +1,1 @@
+ALTER TABLE "account_members" ADD COLUMN "is_default" boolean DEFAULT false NOT NULL;

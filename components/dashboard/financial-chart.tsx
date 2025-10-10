@@ -1,27 +1,48 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { useMemo } from "react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const chartData = [
-  { month: "Jan", pemasukan: 7500000, pengeluaran: 5200000 },
-  { month: "Feb", pemasukan: 8200000, pengeluaran: 5800000 },
-  { month: "Mar", pemasukan: 7800000, pengeluaran: 6100000 },
-  { month: "Apr", pemasukan: 8500000, pengeluaran: 5900000 },
-  { month: "Mei", pemasukan: 9200000, pengeluaran: 6400000 },
-  { month: "Jun", pemasukan: 8500000, pengeluaran: 6200000 },
-]
+interface FinancialChartDatum {
+  month: string;
+  income: number;
+  expense: number;
+}
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat("id-ID", {
+interface FinancialChartProps {
+  data?: FinancialChartDatum[];
+  isLoading?: boolean;
+}
+
+const FALLBACK_DATA: FinancialChartDatum[] = [
+  { month: "Jan", income: 7500000, expense: 5200000 },
+  { month: "Feb", income: 8200000, expense: 5800000 },
+  { month: "Mar", income: 7800000, expense: 6100000 },
+  { month: "Apr", income: 8500000, expense: 5900000 },
+  { month: "Mei", income: 9200000, expense: 6400000 },
+  { month: "Jun", income: 8500000, expense: 6200000 },
+];
+
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     minimumFractionDigits: 0,
     notation: "compact",
-  }).format(value)
-}
+  }).format(value);
 
-export function FinancialChart() {
+export function FinancialChart({ data, isLoading }: FinancialChartProps) {
+  const chartData = useMemo(() => {
+    const source = data && data.length > 0 ? data : FALLBACK_DATA;
+    return source.map((item) => ({
+      month: item.month,
+      income: item.income,
+      expense: item.expense,
+    }));
+  }, [data]);
+
   return (
     <Card className="border-border/50 shadow-sm">
       <CardHeader>
@@ -29,65 +50,63 @@ export function FinancialChart() {
       </CardHeader>
       <CardContent>
         <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id="colorPemasukan" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
-                </linearGradient>
-                <linearGradient id="colorPengeluaran" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-              <XAxis
-                dataKey="month"
-                className="text-muted-foreground"
-                fontSize={12}
-                stroke="hsl(var(--muted-foreground))"
-              />
-              <YAxis
-                className="text-muted-foreground"
-                fontSize={12}
-                tickFormatter={formatCurrency}
-                stroke="hsl(var(--muted-foreground))"
-              />
-              <Tooltip
-                formatter={(value: number, name: string) => [
-                  formatCurrency(value),
-                  name === "pemasukan" ? "Pemasukan" : "Pengeluaran",
-                ]}
-                labelClassName="text-foreground"
-                contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "12px",
-                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                  color: "hsl(var(--foreground))",
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="pemasukan"
-                stroke="#10b981"
-                strokeWidth={3}
-                fill="url(#colorPemasukan)"
-                name="pemasukan"
-              />
-              <Area
-                type="monotone"
-                dataKey="pengeluaran"
-                stroke="#ef4444"
-                strokeWidth={3}
-                fill="url(#colorPengeluaran)"
-                name="pengeluaran"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          {isLoading ? (
+            <Skeleton className="h-full w-full" />
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
+                  </linearGradient>
+                  <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
+                <XAxis
+                  dataKey="month"
+                  className="text-muted-foreground"
+                  fontSize={12}
+                  angle={-35}
+                  textAnchor="end"
+                  height={70}
+                />
+                <YAxis className="text-muted-foreground" fontSize={12} tickFormatter={formatCurrency} />
+                <Tooltip
+                  formatter={(value: number, name: string) => [
+                    formatCurrency(value),
+                    name === "income" ? "Pemasukan" : "Pengeluaran",
+                  ]}
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "12px",
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="income"
+                  stroke="#10b981"
+                  strokeWidth={3}
+                  fill="url(#colorIncome)"
+                  name="income"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="expense"
+                  stroke="#ef4444"
+                  strokeWidth={3}
+                  fill="url(#colorExpense)"
+                  name="expense"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
