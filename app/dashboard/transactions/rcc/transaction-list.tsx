@@ -161,6 +161,7 @@ export function TransactionList({
                   <TransactionCard
                     key={transaction.id}
                     transaction={transaction}
+                    accountSlug={accountSlug}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                   />

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CategoryAutocompleteInput } from "@/components/category/category-autocomplete-input";
+import { DatePicker } from "@/components/date-picker";
 
 import type { FilterSummary } from "./budgets-types";
 
@@ -153,24 +154,26 @@ function FilterFields({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <Label htmlFor="start-date">Tanggal mulai</Label>
-          <Input
+          <DatePicker
             id="start-date"
-            type="date"
             value={startDate}
-            onChange={(event) => onStartDateChange(event.target.value)}
+            onChange={(next) => onStartDateChange(next)}
             max={endDate || undefined}
-            className="rounded-2xl border border-border/60 text-sm"
+            allowClear
+            clearLabel="Kosongkan tanggal mulai"
+            triggerClassName="rounded-2xl border border-border/60 text-sm"
           />
         </div>
         <div className="space-y-1">
           <Label htmlFor="end-date">Tanggal akhir</Label>
-          <Input
+          <DatePicker
             id="end-date"
-            type="date"
             value={endDate}
-            onChange={(event) => onEndDateChange(event.target.value)}
+            onChange={(next) => onEndDateChange(next)}
             min={startDate || undefined}
-            className="rounded-2xl border border-border/60 text-sm"
+            allowClear
+            clearLabel="Kosongkan tanggal akhir"
+            triggerClassName="rounded-2xl border border-border/60 text-sm"
           />
         </div>
       </div>

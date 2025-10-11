@@ -25,6 +25,8 @@ import { createTransaction, updateTransaction } from "@/utils/transactions-servi
 import type { TransactionType } from "@/lib/db/types";
 import type { TransactionItem } from "@/hooks/use-transactions";
 import { CategoryAutocompleteInput } from "@/components/category/category-autocomplete-input";
+import { CurrencyInput } from "@/components/currency-input";
+import { DatePicker } from "@/components/date-picker";
 
 export type QuickTransactionSheetType = "income" | "expense" | "both";
 
@@ -341,7 +343,15 @@ export function QuickTransactionSheet({
               <FormItem>
                 <FormLabel>Nominal</FormLabel>
                 <FormControl>
-                  <Input type="number" min="0" step="0.01" placeholder="0" {...field} />
+                  <CurrencyInput
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="0"
+                    allowClear
+                    clearLabel="Reset nominal"
+                    disabled={mutation.isPending}
+                    className=""
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -381,7 +391,14 @@ export function QuickTransactionSheet({
                 <FormItem>
                   <FormLabel>Tanggal</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <DatePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      allowClear
+                      clearLabel="Reset tanggal"
+                      disabled={mutation.isPending}
+                      isRequired
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

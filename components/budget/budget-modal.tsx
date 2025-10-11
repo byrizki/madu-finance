@@ -12,6 +12,8 @@ import { toast } from "sonner";
 
 import type { BudgetPeriod } from "@/lib/db/types";
 import { CategoryAutocompleteInput } from "@/components/category/category-autocomplete-input";
+import { DatePicker } from "@/components/date-picker";
+import { CurrencyInput } from "@/components/currency-input";
 
 interface BudgetModalProps {
   accountSlug?: string;
@@ -171,15 +173,15 @@ export function BudgetModal({ accountSlug, isOpen, onClose }: BudgetModalProps) 
 
         <div className="space-y-2">
           <Label htmlFor="budget-amount">Jumlah anggaran (IDR)</Label>
-          <Input
+          <CurrencyInput
             id="budget-amount"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="0"
             value={formData.amount}
-            onChange={(event) => setFormData((prev) => ({ ...prev, amount: event.target.value }))}
-            required
+            onValueChange={(next) => setFormData((prev) => ({ ...prev, amount: next }))}
+            placeholder="0"
+            allowClear
+            clearLabel="Kosongkan nominal"
+            disabled={mutation.isPending}
+            inputClassName="text-base"
           />
         </div>
 
@@ -202,23 +204,27 @@ export function BudgetModal({ accountSlug, isOpen, onClose }: BudgetModalProps) 
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="budget-start-date">Tanggal mulai</Label>
-            <Input
+            <DatePicker
               id="budget-start-date"
-              type="date"
               value={formData.startDate}
-              onChange={(event) => setFormData((prev) => ({ ...prev, startDate: event.target.value }))}
-              required
+              onChange={(next) => setFormData((prev) => ({ ...prev, startDate: next }))}
               max={formData.endDate || undefined}
+              allowClear
+              clearLabel="Kosongkan tanggal mulai"
+              isRequired
+              disabled={mutation.isPending}
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="budget-end-date">Tanggal akhir (opsional)</Label>
-            <Input
+            <DatePicker
               id="budget-end-date"
-              type="date"
               value={formData.endDate}
-              onChange={(event) => setFormData((prev) => ({ ...prev, endDate: event.target.value }))}
+              onChange={(next) => setFormData((prev) => ({ ...prev, endDate: next }))}
               min={formData.startDate || undefined}
+              allowClear
+              clearLabel="Kosongkan tanggal akhir"
+              disabled={mutation.isPending}
             />
           </div>
         </div>

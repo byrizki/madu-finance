@@ -23,6 +23,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { CategoryAutocompleteInput } from "@/components/category/category-autocomplete-input";
+import { DatePicker } from "@/components/date-picker";
+import { CurrencyInput } from "@/components/currency-input";
 import type { TransactionItem } from "@/hooks/use-transactions";
 import { cn, formatCurrency, getRelativeTime } from "@/lib/utils";
 
@@ -31,6 +34,7 @@ interface TransactionEditFormValues {
   amount: string;
   category: string;
   description: string;
+  date: string;
 }
 
 interface TransactionCardProps {
@@ -38,13 +42,28 @@ interface TransactionCardProps {
   className?: string;
   onEdit?: (updated: TransactionItem) => void | Promise<void>;
   onDelete?: (transaction: TransactionItem) => void | Promise<void>;
+  accountSlug?: string;
 }
+
+const formatDateInputValue = (value: string | null | undefined) => {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toISOString().slice(0, 10);
+};
 
 const buildEditDefaults = (transaction: TransactionItem): TransactionEditFormValues => ({
   title: transaction.title,
   amount: Math.abs(transaction.amount).toString(),
   category: transaction.category,
   description: transaction.description ?? "",
+  date: formatDateInputValue(transaction.occurredAt ?? transaction.createdAt),
 });
 
 const formatDateTime = (value: string | null | undefined) => {
@@ -59,7 +78,7 @@ const formatDateTime = (value: string | null | undefined) => {
   }
 };
 
-export function TransactionCard({ transaction, className, onEdit, onDelete }: TransactionCardProps) {
+export function TransactionCard({ transaction, className, onEdit, onDelete, accountSlug }: TransactionCardProps) {
   const { showValues } = useShowValues();
   const isIncome = transaction.type === "income";
   const Icon = isIncome ? ArrowUpRight : ArrowDownRight;
@@ -119,6 +138,9 @@ export function TransactionCard({ transaction, className, onEdit, onDelete }: Tr
 
     const signedAmount = transaction.type === "income" ? parsedAmount : -parsedAmount;
     const description = values.description.trim();
+    const normalizedDate = values.date
+      ? new Date(values.date).toISOString()
+      : transaction.occurredAt ?? transaction.createdAt;
 
     const updatedTransaction: TransactionItem = {
       ...transaction,
@@ -126,6 +148,7 @@ export function TransactionCard({ transaction, className, onEdit, onDelete }: Tr
       category,
       amount: signedAmount,
       description: description ? description : null,
+      occurredAt: normalizedDate,
     };
 
     await Promise.resolve(onEdit(updatedTransaction));
@@ -365,7 +388,18 @@ export function TransactionCard({ transaction, className, onEdit, onDelete }: Tr
                   <FormItem>
                     <FormLabel>Nominal</FormLabel>
                     <FormControl>
-                      <Input type="number" min="0" step="0.01" placeholder="0" {...field} />
+                      <CurrencyInput
+                        ref={field.ref}
+                        name={field.name}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        onBlur={field.onBlur}
+                        placeholder="0"
+                        allowClear
+                        clearLabel="Kosongkan nominal"
+                        disabled={editForm.formState.isSubmitting}
+                        isRequired
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -379,7 +413,38 @@ export function TransactionCard({ transaction, className, onEdit, onDelete }: Tr
                   <FormItem>
                     <FormLabel>Kategori</FormLabel>
                     <FormControl>
-                      <Input placeholder="Masukkan kategori" {...field} />
+                      <CategoryAutocompleteInput
+                        ref={field.ref}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Pilih atau ketik kategori"
+                        accountSlug={accountSlug}
+                        fallback={[transaction.category]}
+                        disabled={editForm.formState.isSubmitting}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="date"
+                rules={{ required: "Tanggal wajib diisi" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tanggal</FormLabel>
+                    <FormControl>
+                      <DatePicker
+                        ref={field.ref}
+                        name={field.name}
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        allowClear={false}
+                        disabled={editForm.formState.isSubmitting}
+                        isRequired
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -392,7 +457,12 @@ export function TransactionCard({ transaction, className, onEdit, onDelete }: Tr
                   <FormItem>
                     <FormLabel>Catatan</FormLabel>
                     <FormControl>
-                      <Textarea rows={3} placeholder="Tambahkan catatan" {...field} />
+                      <Textarea
+                        rows={3}
+                        placeholder="Tambahkan catatan"
+                        disabled={editForm.formState.isSubmitting}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
