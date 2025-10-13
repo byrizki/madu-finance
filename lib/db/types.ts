@@ -34,6 +34,7 @@ export type SharedAccountRow = SerializeDates<SharedAccountRecord>;
 export type AccountMemberRow = SerializeDates<AccountMemberRecord>;
 export type MemberRow = SerializeDates<MemberRecord>;
 export type WalletRow = SerializeDates<WalletRecord>;
+export type WalletSummary = Pick<WalletRecord, "id" | "name" | "type" | "color">;
 export type BudgetRow = SerializeDates<BudgetRecord>;
 export type InstallmentRow = SerializeDates<InstallmentRecord>;
 export type TransactionRow = SerializeDates<TransactionRecord>;

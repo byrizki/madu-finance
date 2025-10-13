@@ -12,7 +12,9 @@ import {
 } from "./schema";
 import { and, asc, desc, eq, gte, ilike, inArray, lt } from "drizzle-orm";
 
-import type { TransactionActivityAction } from "./types";
+import type { TransactionActivityAction, WalletSummary } from "./types";
+
+type DbExecutor = Pick<DbClient, "query" | "insert" | "update">;
 
 const normalizeAmount = (value: number) => Math.round(value * 100) / 100;
 
@@ -75,14 +77,17 @@ const serializeTransactionForPayload = (transaction: typeof transactions.$inferS
   };
 };
 
-async function logTransactionActivity(input: {
-  accountId: string;
-  transactionId: string;
-  actorId?: string | null;
-  action: TransactionActivityAction;
-  payload?: unknown;
-}) {
-  await db.insert(transactionActivities).values({
+async function logTransactionActivity(
+  client: DbExecutor,
+  input: {
+    accountId: string;
+    transactionId: string;
+    actorId?: string | null;
+    action: TransactionActivityAction;
+    payload?: unknown;
+  },
+) {
+  await client.insert(transactionActivities).values({
     accountId: input.accountId,
     transactionId: input.transactionId,
     actorId: input.actorId ?? null,
@@ -94,8 +99,13 @@ async function logTransactionActivity(input: {
 type TransactionSelect = typeof transactions.$inferSelect;
 type MemberSelect = typeof members.$inferSelect;
 type TransactionActivitySelect = typeof transactionActivities.$inferSelect;
+type WalletSelect = typeof wallets.$inferSelect;
 
-export type TransactionWithLatestActivity = TransactionSelect & {
+type TransactionSelectWithRelations = TransactionSelect & {
+  wallet?: WalletSummary | null;
+};
+
+export type TransactionWithLatestActivity = TransactionSelectWithRelations & {
   latestActivity: {
     actorId: string | null;
     actorName: string | null;
@@ -109,10 +119,91 @@ type TransactionActivityWithActor = TransactionActivitySelect & {
   actor: Pick<MemberSelect, "id" | "name" | "avatarUrl"> | null;
 };
 
+const summarizeWallet = (wallet: WalletSelect | WalletSummary | null | undefined): WalletSummary | null => {
+  if (!wallet) {
+    return null;
+  }
+
+  return {
+    id: wallet.id,
+    name: wallet.name,
+    type: wallet.type,
+    color: wallet.color ?? null,
+  } satisfies WalletSummary;
+};
+
+async function getWalletSummaryForAccount(
+  accountId: string,
+  walletId: string,
+  client: DbExecutor = db,
+): Promise<WalletSummary | null> {
+  const wallet = await client.query.wallets.findFirst({
+    where: and(eq(wallets.id, walletId), eq(wallets.accountId, accountId)),
+    columns: {
+      id: true,
+      name: true,
+      type: true,
+      color: true,
+    },
+  });
+
+  if (!wallet) {
+    return null;
+  }
+
+  return summarizeWallet(wallet);
+}
+
+async function applyWalletDelta(
+  client: DbExecutor,
+  accountId: string,
+  walletId: string,
+  delta: number,
+): Promise<WalletSummary> {
+  if (!Number.isFinite(delta)) {
+    throw new Error("Invalid amount");
+  }
+
+  const currentWallet = await client.query.wallets.findFirst({
+    where: and(eq(wallets.id, walletId), eq(wallets.accountId, accountId)),
+  });
+
+  if (!currentWallet) {
+    throw new Error("Dompet tidak ditemukan");
+  }
+
+  const normalizedDelta = normalizeAmount(delta);
+  if (normalizedDelta === 0) {
+    return summarizeWallet(currentWallet)!;
+  }
+
+  const currentBalance = parseNumeric(currentWallet.balance);
+  const nextBalance = normalizeAmount(currentBalance + normalizedDelta);
+
+  if (nextBalance < 0) {
+    throw new Error("Saldo dompet tidak mencukupi");
+  }
+
+  const [updatedWallet] = await client
+    .update(wallets)
+    .set({
+      balance: toNumericString(nextBalance),
+      updatedAt: new Date(),
+    })
+    .where(and(eq(wallets.id, walletId), eq(wallets.accountId, accountId)))
+    .returning();
+
+  if (!updatedWallet) {
+    throw new Error("Dompet tidak ditemukan");
+  }
+
+  return summarizeWallet(updatedWallet)!;
+}
+
 async function attachLatestActivities(
   accountId: string,
-  items: TransactionSelect[],
-): Promise<TransactionWithLatestActivity[]> {
+  items: TransactionSelectWithRelations[],
+): Promise<Array<TransactionSelectWithRelations & TransactionWithLatestActivity>> {
   if (items.length === 0) {
     return items.map((item) => ({ ...item, latestActivity: null }));
   }
@@ -755,11 +846,26 @@ export async function getTransactions(accountSlug: string) {
   const accountId = await requireAccountId(accountSlug);
   const rows = await db.query.transactions.findMany({
     where: eq(transactions.accountId, accountId),
+    with: {
+      wallet: {
+        columns: {
+          id: true,
+          name: true,
+          type: true,
+          color: true,
+        },
+      },
+    },
     orderBy: (fields, operators) => operators.desc(fields.occurredAt),
     limit: 100,
   });
 
-  return attachLatestActivities(accountId, rows);
+  const normalized = rows.map((row) => ({
+    ...row,
+    wallet: summarizeWallet(row.wallet),
+  }));
+
+  return attachLatestActivities(accountId, normalized);
 }
 
 interface TransactionActorOptions {
@@ -781,37 +887,57 @@ export async function createTransaction(
   options: TransactionActorOptions = {},
 ) {
   const accountId = await requireAccountId(accountSlug);
-  const [transaction] = await db
-    .insert(transactions)
-    .values({
+  const result = await db.transaction(async (tx) => {
+    let walletSummary: WalletSummary | null | undefined;
+
+    if (values.walletId !== undefined) {
+      if (values.walletId === null) {
+        walletSummary = null;
+      } else {
+        const amountDelta = values.type === "income" ? normalizeAmount(values.amount) : -normalizeAmount(values.amount);
+        walletSummary = await applyWalletDelta(tx, accountId, values.walletId, amountDelta);
+      }
+    }
+
+    const [transaction] = await tx
+      .insert(transactions)
+      .values({
+        accountId,
+        walletId: values.walletId,
+        memberId: values.memberId,
+        type: values.type,
+        title: values.title,
+        category: values.category,
+        amount: toNumericString(values.amount),
+        occurredAt: values.occurredAt,
+        description: values.description,
+      })
+      .returning();
+
+    if (!transaction) {
+      throw new Error("Failed to create transaction");
+    }
+
+    await logTransactionActivity(tx, {
       accountId,
-      walletId: values.walletId,
-      memberId: values.memberId,
-      type: values.type,
-      title: values.title,
-      category: values.category,
-      amount: toNumericString(values.amount),
-      occurredAt: values.occurredAt,
-      description: values.description,
-    })
-    .returning();
+      transactionId: transaction.id,
+      actorId: options.actorId ?? values.memberId ?? null,
+      action: "create",
+      payload: {
+        after: serializeTransactionForPayload(transaction),
+      },
+    });
 
-  if (!transaction) {
-    throw new Error("Failed to create transaction");
-  }
-
-  await logTransactionActivity({
-    accountId,
-    transactionId: transaction.id,
-    actorId: options.actorId ?? values.memberId ?? null,
-    action: "create",
-    payload: {
-      after: serializeTransactionForPayload(transaction),
-    },
+    return { transaction, walletSummary };
   });
 
-  const [enriched] = await attachLatestActivities(accountId, [transaction]);
-  return enriched ?? transaction;
+  const [enriched] = await attachLatestActivities(accountId, [
+    {
+      ...result.transaction,
+      wallet: result.walletSummary ?? null,
+    },
+  ]);
+  return enriched ?? result.transaction;
 }
 
 export async function updateTransaction(
@@ -830,68 +956,126 @@ export async function updateTransaction(
   options: TransactionActorOptions = {},
 ) {
   const accountId = await requireAccountId(accountSlug);
+  const result = await db.transaction(async (tx) => {
+    const existing = await tx.query.transactions.findFirst({
+      where: and(eq(transactions.id, transactionId), eq(transactions.accountId, accountId)),
+    });
 
-  const existing = await db.query.transactions.findFirst({
-    where: and(eq(transactions.id, transactionId), eq(transactions.accountId, accountId)),
+    if (!existing) {
+      return { transaction: null, walletSummary: null } as const;
+    }
+
+    const previousAmount = normalizeAmount(parseNumeric(existing.amount));
+    const previousDelta = existing.type === "income" ? previousAmount : -previousAmount;
+    const previousWalletId = existing.walletId ?? null;
+
+    const nextType = values.type ?? existing.type;
+    const nextAmount = values.amount !== undefined ? normalizeAmount(values.amount) : previousAmount;
+    const nextWalletId = values.walletId !== undefined ? values.walletId ?? null : previousWalletId;
+    const nextDescription = values.description !== undefined ? values.description : existing.description;
+
+    const nextDelta = nextType === "income" ? nextAmount : -nextAmount;
+
+    let walletSummary: WalletSummary | null | undefined;
+
+    if (previousWalletId && nextWalletId && previousWalletId === nextWalletId) {
+      const deltaDifference = normalizeAmount(nextDelta - previousDelta);
+      if (deltaDifference !== 0) {
+        walletSummary = await applyWalletDelta(tx, accountId, previousWalletId, deltaDifference);
+      } else {
+        walletSummary = await getWalletSummaryForAccount(accountId, previousWalletId, tx);
+      }
+    } else {
+      if (previousWalletId) {
+        await applyWalletDelta(tx, accountId, previousWalletId, -previousDelta);
+      }
+
+      if (nextWalletId) {
+        walletSummary = await applyWalletDelta(tx, accountId, nextWalletId, nextDelta);
+      } else {
+        walletSummary = null;
+      }
+    }
+
+    const [transaction] = await tx
+      .update(transactions)
+      .set({
+        walletId: values.walletId !== undefined ? values.walletId : undefined,
+        memberId: values.memberId !== undefined ? values.memberId : undefined,
+        type: values.type,
+        title: values.title,
+        category: values.category,
+        amount: values.amount !== undefined ? toNumericString(nextAmount) : undefined,
+        occurredAt: values.occurredAt,
+        description: nextDescription,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(transactions.id, transactionId), eq(transactions.accountId, accountId)))
+      .returning();
+
+    if (!transaction) {
+      return { transaction: null, walletSummary: null } as const;
+    }
+
+    await logTransactionActivity(tx, {
+      accountId,
+      transactionId,
+      actorId: options.actorId ?? values.memberId ?? existing.memberId ?? null,
+      action: "update",
+      payload: {
+        before: serializeTransactionForPayload(existing),
+        after: serializeTransactionForPayload(transaction),
+      },
+    });
+
+    if (transaction.walletId && walletSummary === undefined) {
+      walletSummary = await getWalletSummaryForAccount(accountId, transaction.walletId, tx);
+    }
+
+    return { transaction, walletSummary } as const;
   });
 
-  if (!existing) {
+  if (!result.transaction) {
     return null;
   }
 
-  const [transaction] = await db
-    .update(transactions)
-    .set({
-      walletId: values.walletId,
-      memberId: values.memberId,
-      type: values.type,
-      title: values.title,
-      category: values.category,
-      amount: values.amount !== undefined ? values.amount.toString() : undefined,
-      occurredAt: values.occurredAt,
-      description: values.description,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(transactions.id, transactionId), eq(transactions.accountId, accountId)))
-    .returning();
-
-  if (!transaction) {
-    return null;
-  }
-
-  await logTransactionActivity({
-    accountId,
-    transactionId,
-    actorId: options.actorId ?? values.memberId ?? existing.memberId ?? null,
-    action: "update",
-    payload: {
-      before: serializeTransactionForPayload(existing),
-      after: serializeTransactionForPayload(transaction),
+  const [enriched] = await attachLatestActivities(accountId, [
+    {
+      ...result.transaction,
+      wallet: result.walletSummary ?? null,
     },
-  });
-
-  const [enriched] = await attachLatestActivities(accountId, [transaction]);
-  return enriched ?? transaction;
+  ]);
+  return enriched ?? result.transaction;
 }
 
 export async function deleteTransaction(accountSlug: string, transactionId: string, options: TransactionActorOptions = {}) {
   const accountId = await requireAccountId(accountSlug);
 
-  const existing = await db.query.transactions.findFirst({
-    where: and(eq(transactions.id, transactionId), eq(transactions.accountId, accountId)),
-  });
+  return db.transaction(async (tx) => {
+    const existing = await tx.query.transactions.findFirst({
+      where: and(eq(transactions.id, transactionId), eq(transactions.accountId, accountId)),
+    });
 
-  if (!existing) {
-    return false;
-  }
+    if (!existing) {
+      return false;
+    }
 
-  const deleted = await db
-    .delete(transactions)
-    .where(and(eq(transactions.id, transactionId), eq(transactions.accountId, accountId)))
-    .returning();
+    const deleted = await tx
+      .delete(transactions)
+      .where(and(eq(transactions.id, transactionId), eq(transactions.accountId, accountId)))
+      .returning();
 
-  if (deleted.length > 0) {
-    await logTransactionActivity({
+    if (deleted.length === 0) {
+      return false;
+    }
+
+    if (existing.walletId) {
+      const amount = normalizeAmount(parseNumeric(existing.amount));
+      const delta = existing.type === "income" ? amount : -amount;
+      await applyWalletDelta(tx, accountId, existing.walletId, -delta);
+    }
+
+    await logTransactionActivity(tx, {
       accountId,
       transactionId,
       actorId: options.actorId ?? existing.memberId ?? null,
@@ -900,10 +1084,9 @@ export async function deleteTransaction(accountSlug: string, transactionId: stri
         before: serializeTransactionForPayload(existing),
       },
     });
-    return true;
-  }
 
-  return false;
+    return true;
+  });
 }
 
 export async function setDefaultAccountForMember(memberId: string, accountId: string) {

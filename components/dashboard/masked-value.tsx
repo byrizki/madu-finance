@@ -1,7 +1,15 @@
-import { cn, formatCompactCurrency } from "@/lib/utils";
+import { cn, formatCompactCurrency, formatCurrency } from "@/lib/utils";
 import { useShowValues } from "@/components/providers/show-values-provider";
 
-export function MaskedValue({ className, value }: { className?: string; value: number | string }) {
+export function MaskedValue({
+  className,
+  value,
+  compact = false,
+}: {
+  className?: string;
+  value: number | string;
+  compact?: boolean;
+}) {
   const { showValues, toggleShowValues } = useShowValues();
 
   return (
@@ -18,7 +26,13 @@ export function MaskedValue({ className, value }: { className?: string; value: n
         className
       )}
     >
-      {showValues ? (typeof value === "string" ? value : formatCompactCurrency(value)) : "*****"}
+      {showValues
+        ? typeof value === "string"
+          ? value
+          : compact
+          ? formatCompactCurrency(value)
+          : formatCurrency(value)
+        : "*****"}
     </span>
   );
 }

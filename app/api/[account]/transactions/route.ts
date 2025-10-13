@@ -31,6 +31,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ acc
     const body = await request.json();
     const { walletId, memberId, type, title, category, amount, occurredAt, description } = body ?? {};
 
+    const normalizedWalletId =
+      walletId === null
+        ? null
+        : typeof walletId === "string" && walletId.trim().length > 0
+          ? walletId.trim()
+          : undefined;
+    const normalizedMemberId =
+      memberId === null
+        ? null
+        : typeof memberId === "string" && memberId.trim().length > 0
+          ? memberId.trim()
+          : undefined;
+
     if (!type || !title || !category || amount === undefined) {
       return NextResponse.json({ error: "type, title, category, and amount are required" }, { status: 400 });
     }
@@ -38,8 +51,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ acc
     const transaction = await createTransaction(
       accountSlug,
       {
-        walletId,
-        memberId,
+        walletId: normalizedWalletId ?? undefined,
+        memberId: normalizedMemberId ?? undefined,
         type,
         title,
         category,
@@ -49,10 +62,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ acc
       },
       { actorId: resolved.context.memberId },
     );
-
     return NextResponse.json({ transaction }, { status: 201 });
   } catch (error) {
     console.error("Failed to create transaction", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Internal Server Error";
+    const status = message === "Dompet tidak ditemukan" ? 400 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

@@ -5,28 +5,23 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Form } from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ModalShell } from "@/components/dashboard/modal-shell";
 import { cn } from "@/lib/utils";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { Textarea } from "@/components/ui/textarea";
 
 import { createTransaction, updateTransaction } from "@/utils/transactions-service";
 import type { TransactionType } from "@/lib/db/types";
 import type { TransactionItem } from "@/hooks/use-transactions";
-import { CategoryAutocompleteInput } from "@/components/category/category-autocomplete-input";
-import { CurrencyInput } from "@/components/currency-input";
-import { DatePicker } from "@/components/date-picker";
+import {
+  NO_WALLET_OPTION_VALUE,
+  TransactionFormFields,
+  type TransactionFormValues,
+  type TransactionFormWalletOption,
+} from "@/components/transactions/transaction-form";
+import { useWallets } from "@/hooks/use-wallets";
 
 export type QuickTransactionSheetType = "income" | "expense" | "both";
 
@@ -44,14 +39,6 @@ interface QuickTransactionSheetProps {
   onSuccess?: () => void;
   transaction?: TransactionItem;
   variant?: "create" | "edit";
-}
-
-interface TransactionFormValues {
-  title: string;
-  amount: string;
-  category: string;
-  description: string;
-  date: string;
 }
 
 type TransactionTypeValue = "income" | "expense";
@@ -83,6 +70,7 @@ const getDefaultValues = (): TransactionFormValues => ({
   category: "",
   description: "",
   date: new Date().toISOString().split("T")[0],
+  walletId: NO_WALLET_OPTION_VALUE,
 });
 
 const getValuesFromTransaction = (transaction: TransactionItem): TransactionFormValues => ({
@@ -91,6 +79,7 @@ const getValuesFromTransaction = (transaction: TransactionItem): TransactionForm
   category: transaction.category,
   description: transaction.description ?? "",
   date: (transaction.occurredAt ?? transaction.createdAt).slice(0, 10),
+  walletId: transaction.walletId ?? NO_WALLET_OPTION_VALUE,
 });
 
 export function QuickTransactionSheet({
@@ -128,6 +117,52 @@ export function QuickTransactionSheet({
     defaultValues: getDefaultValues(),
   });
 
+  const { data: wallets, isLoading: walletsLoading } = useWallets(accountSlug);
+
+  const walletOptions = useMemo<TransactionFormWalletOption[]>(
+    () => {
+      const list = (wallets ?? []).map((wallet) => ({
+        id: wallet.id,
+        name: wallet.name,
+        type: wallet.type,
+        color: wallet.color,
+        provider: wallet.provider,
+      }));
+
+      if (transaction?.wallet && !list.some((item) => item.id === transaction.wallet?.id)) {
+        const fallbackProvider = wallets?.find((wallet) => wallet.id === transaction.wallet?.id)?.provider ?? null;
+        list.push({
+          id: transaction.wallet.id,
+          name: transaction.wallet.name,
+          type: transaction.wallet.type,
+          color: transaction.wallet.color,
+          provider: fallbackProvider,
+        });
+      }
+
+      return list;
+    },
+    [wallets, transaction?.wallet],
+  );
+
+  useEffect(() => {
+    if (isEditing) {
+      return;
+    }
+
+    if (walletOptions.length === 0) {
+      return;
+    }
+
+    const currentValue = form.getValues("walletId");
+    if (currentValue === NO_WALLET_OPTION_VALUE) {
+      form.setValue("walletId", walletOptions[0]?.id ?? NO_WALLET_OPTION_VALUE, {
+        shouldDirty: false,
+        shouldTouch: false,
+      });
+    }
+  }, [form, isEditing, walletOptions]);
+
   useEffect(() => {
     if (!isEditing) {
       setActiveType(resolvedDefaultType);
@@ -154,6 +189,7 @@ export function QuickTransactionSheet({
       category: string;
       occurredAt: string;
       description?: string | null;
+      walletId: string | null;
     }) => {
       if (!accountSlug) {
         throw new Error("Kas belum siap. Coba lagi nanti.");
@@ -170,7 +206,7 @@ export function QuickTransactionSheet({
             amount: payload.amount,
             occurredAt: payload.occurredAt,
             description: payload.description ?? null,
-            walletId: transaction.walletId,
+            walletId: payload.walletId,
             memberId: transaction.memberId,
           },
         });
@@ -185,7 +221,7 @@ export function QuickTransactionSheet({
           amount: payload.amount,
           occurredAt: payload.occurredAt,
           description: payload.description ?? null,
-          walletId: null,
+          walletId: payload.walletId,
           memberId: null,
         },
       });
@@ -241,6 +277,8 @@ export function QuickTransactionSheet({
 
       const occurredAt = occurredAtDate.toISOString();
 
+      const normalizedWalletId = values.walletId === NO_WALLET_OPTION_VALUE ? null : values.walletId;
+
       await mutation.mutateAsync({
         type: activeType,
         title: values.title.trim(),
@@ -248,6 +286,7 @@ export function QuickTransactionSheet({
         category: values.category,
         occurredAt,
         description: showDescriptionField ? values.description.trim() || undefined : undefined,
+        walletId: normalizedWalletId,
       });
     },
     [activeType, form, mutation, showDateField, showDescriptionField],
@@ -317,110 +356,16 @@ export function QuickTransactionSheet({
             </Tabs>
           )}
 
-          <FormField
-            control={form.control}
-            name="title"
-            rules={{ required: "Nama transaksi wajib diisi" }}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nama</FormLabel>
-                <FormControl>
-                  <Input placeholder="Contoh: Gaji bulanan" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+          <TransactionFormFields
+            form={form}
+            accountSlug={accountSlug}
+            walletOptions={walletOptions}
+            walletsLoading={walletsLoading}
+            isSubmitting={mutation.isPending}
+            showDateField={showDateField}
+            showDescriptionField={showDescriptionField}
+            fallbackCategories={fallbackCategories}
           />
-
-          <FormField
-            control={form.control}
-            name="amount"
-            rules={{
-              required: "Nominal wajib diisi",
-              validate: (value) => (Number(value) > 0 ? true : "Masukkan nominal yang valid"),
-            }}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nominal</FormLabel>
-                <FormControl>
-                  <CurrencyInput
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    placeholder="0"
-                    allowClear
-                    clearLabel="Reset nominal"
-                    disabled={mutation.isPending}
-                    className=""
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="category"
-            rules={{
-              required: "Kategori wajib dipilih",
-              validate: (value) => (value.trim().length ? true : "Kategori tidak boleh kosong"),
-            }}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Kategori</FormLabel>
-                <FormControl>
-                  <CategoryAutocompleteInput
-                    accountSlug={accountSlug}
-                    value={field.value}
-                    onChange={field.onChange}
-                    fallback={fallbackCategories}
-                    placeholder="Ketik atau pilih kategori"
-                    disabled={mutation.isPending}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {showDateField && (
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tanggal</FormLabel>
-                  <FormControl>
-                    <DatePicker
-                      value={field.value}
-                      onChange={field.onChange}
-                      allowClear
-                      clearLabel="Reset tanggal"
-                      disabled={mutation.isPending}
-                      isRequired
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-
-          {showDescriptionField && (
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Deskripsi</FormLabel>
-                  <FormControl>
-                    <Textarea rows={3} placeholder="Tambahkan catatan" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
         </form>
       </Form>
     </ModalShell>

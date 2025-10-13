@@ -35,7 +35,7 @@ export function DashboardOverviewMetrics({ metrics, isLoading }: DashboardOvervi
                 {isLoading ? (
                   <Skeleton className="h-5 w-20" />
                 ) : (
-                  <MaskedValue className="text-lg font-semibold text-foreground" value={metric.value} />
+                  <MaskedValue compact className="text-lg font-semibold text-foreground" value={metric.value} />
                 )}
               </div>
             </CardContent>

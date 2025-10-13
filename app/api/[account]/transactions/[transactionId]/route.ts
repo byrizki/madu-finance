@@ -24,12 +24,25 @@ export async function PATCH(
     const body = await request.json();
     const { walletId, memberId, type, title, category, amount, occurredAt, description } = body ?? {};
 
+    const normalizedWalletId =
+      walletId === null
+        ? null
+        : typeof walletId === "string" && walletId.trim().length > 0
+          ? walletId.trim()
+          : undefined;
+    const normalizedMemberId =
+      memberId === null
+        ? null
+        : typeof memberId === "string" && memberId.trim().length > 0
+          ? memberId.trim()
+          : undefined;
+
     const updated = await updateTransaction(
       accountSlug,
       transactionId,
       {
-        walletId,
-        memberId,
+        walletId: normalizedWalletId,
+        memberId: normalizedMemberId,
         type,
         title,
         category,
@@ -47,7 +60,9 @@ export async function PATCH(
     return NextResponse.json({ transaction: updated });
   } catch (error) {
     console.error("Failed to update transaction", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Internal Server Error";
+    const status = message === "Dompet tidak ditemukan" ? 400 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }
 

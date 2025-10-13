@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { ArrowDownRight, ArrowUpRight, Clock, Pencil, Trash2, User } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Clock, Pencil, Trash2, User, Wallet } from "lucide-react";
 
 import { MaskedValue } from "@/components/dashboard/masked-value";
 import { ModalShell } from "@/components/dashboard/modal-shell";
@@ -20,22 +20,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { CategoryAutocompleteInput } from "@/components/category/category-autocomplete-input";
-import { DatePicker } from "@/components/date-picker";
-import { CurrencyInput } from "@/components/currency-input";
+import { Form } from "@/components/ui/form";
+import {
+  NO_WALLET_OPTION_VALUE,
+  TransactionFormFields,
+  type TransactionFormValues,
+  type TransactionFormWalletOption,
+} from "@/components/transactions/transaction-form";
 import type { TransactionItem } from "@/hooks/use-transactions";
 import { cn, formatCurrency, getRelativeTime } from "@/lib/utils";
-
-interface TransactionEditFormValues {
-  title: string;
-  amount: string;
-  category: string;
-  description: string;
-  date: string;
-}
+import { useWallets } from "@/hooks/use-wallets";
 
 interface TransactionCardProps {
   transaction: TransactionItem;
@@ -58,12 +52,13 @@ const formatDateInputValue = (value: string | null | undefined) => {
   return date.toISOString().slice(0, 10);
 };
 
-const buildEditDefaults = (transaction: TransactionItem): TransactionEditFormValues => ({
+const buildEditDefaults = (transaction: TransactionItem): TransactionFormValues => ({
   title: transaction.title,
   amount: Math.abs(transaction.amount).toString(),
   category: transaction.category,
   description: transaction.description ?? "",
   date: formatDateInputValue(transaction.occurredAt ?? transaction.createdAt),
+  walletId: transaction.walletId ?? NO_WALLET_OPTION_VALUE,
 });
 
 const formatDateTime = (value: string | null | undefined) => {
@@ -98,9 +93,34 @@ export function TransactionCard({ transaction, className, onEdit, onDelete, acco
 
   const defaultValues = useMemo(() => buildEditDefaults(transaction), [transaction]);
 
-  const editForm = useForm<TransactionEditFormValues>({
+  const editForm = useForm<TransactionFormValues>({
     defaultValues,
   });
+
+  const { data: walletList, isLoading: walletsLoading } = useWallets(accountSlug);
+
+  const walletOptions = useMemo<TransactionFormWalletOption[]>(() => {
+    const list = (walletList ?? []).map((wallet) => ({
+      id: wallet.id,
+      name: wallet.name,
+      type: wallet.type,
+      color: wallet.color,
+      provider: wallet.provider,
+    }));
+
+    if (transaction.wallet && !list.some((item) => item.id === transaction.wallet?.id)) {
+      const fallbackProvider = walletList?.find((wallet) => wallet.id === transaction.wallet?.id)?.provider ?? null;
+      list.push({
+        id: transaction.wallet.id,
+        name: transaction.wallet.name,
+        type: transaction.wallet.type,
+        color: transaction.wallet.color,
+        provider: fallbackProvider,
+      });
+    }
+
+    return list;
+  }, [walletList, transaction.wallet]);
 
   useEffect(() => {
     if (editDialogOpen) {
@@ -141,6 +161,10 @@ export function TransactionCard({ transaction, className, onEdit, onDelete, acco
     const normalizedDate = values.date
       ? new Date(values.date).toISOString()
       : transaction.occurredAt ?? transaction.createdAt;
+    const walletId = values.walletId === NO_WALLET_OPTION_VALUE ? null : values.walletId;
+    const walletMeta = walletId
+      ? walletOptions.find((wallet) => wallet.id === walletId) ?? transaction.wallet ?? null
+      : null;
 
     const updatedTransaction: TransactionItem = {
       ...transaction,
@@ -149,6 +173,8 @@ export function TransactionCard({ transaction, className, onEdit, onDelete, acco
       amount: signedAmount,
       description: description ? description : null,
       occurredAt: normalizedDate,
+      walletId,
+      wallet: walletMeta,
     };
 
     await Promise.resolve(onEdit(updatedTransaction));
@@ -312,6 +338,10 @@ export function TransactionCard({ transaction, className, onEdit, onDelete, acco
               <Badge variant="outline" className="rounded-full px-2 py-0.5 text-[11px]">
                 {isIncome ? "Pemasukan" : "Pengeluaran"}
               </Badge>
+              <span className="flex items-center gap-1">
+                <Wallet className="h-3.5 w-3.5" />
+                {transaction.wallet?.name ?? transaction.walletId ?? "-"}
+              </span>
             </div>
           </div>
 
@@ -366,107 +396,17 @@ export function TransactionCard({ transaction, className, onEdit, onDelete, acco
         >
           <Form {...editForm}>
             <form id={editFormId} onSubmit={handleEditSubmit} className="space-y-4">
-              <FormField
-                control={editForm.control}
-                name="title"
-                rules={{ required: "Nama transaksi wajib diisi" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nama transaksi</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Masukkan nama" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={editForm.control}
-                name="amount"
-                rules={{ required: "Nominal wajib diisi" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nominal</FormLabel>
-                    <FormControl>
-                      <CurrencyInput
-                        ref={field.ref}
-                        name={field.name}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        onBlur={field.onBlur}
-                        placeholder="0"
-                        allowClear
-                        clearLabel="Kosongkan nominal"
-                        disabled={editForm.formState.isSubmitting}
-                        isRequired
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={editForm.control}
-                name="category"
-                rules={{ required: "Kategori wajib diisi" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Kategori</FormLabel>
-                    <FormControl>
-                      <CategoryAutocompleteInput
-                        ref={field.ref}
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Pilih atau ketik kategori"
-                        accountSlug={accountSlug}
-                        fallback={[transaction.category]}
-                        disabled={editForm.formState.isSubmitting}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={editForm.control}
-                name="date"
-                rules={{ required: "Tanggal wajib diisi" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tanggal</FormLabel>
-                    <FormControl>
-                      <DatePicker
-                        ref={field.ref}
-                        name={field.name}
-                        value={field.value}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        allowClear={false}
-                        disabled={editForm.formState.isSubmitting}
-                        isRequired
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={editForm.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Catatan</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        rows={3}
-                        placeholder="Tambahkan catatan"
-                        disabled={editForm.formState.isSubmitting}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+              <TransactionFormFields
+                form={editForm}
+                accountSlug={accountSlug}
+                walletOptions={walletOptions}
+                walletsLoading={walletsLoading}
+                isSubmitting={editForm.formState.isSubmitting}
+                showDateField
+                showDescriptionField
+                fallbackCategories={[transaction.category]}
+                walletPlaceholder="Cari atau pilih dompet"
+                categoryPlaceholder="Pilih atau ketik kategori"
               />
             </form>
           </Form>

@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-import type { TransactionRow, TransactionType, TransactionActivityAction } from "@/lib/db/types";
+import type { TransactionRow, TransactionType, TransactionActivityAction, WalletSummary } from "@/lib/db/types";
 import { toast } from "sonner";
 
 import { createUnauthorizedAccountError, isUnauthorizedAccountError } from "@/lib/errors";
@@ -11,6 +11,7 @@ export interface TransactionItem {
   id: string;
   accountId: string;
   walletId: string | null;
+  wallet: WalletSummary | null;
   memberId: string | null;
   type: TransactionType;
   title: string;
@@ -31,6 +32,7 @@ export interface TransactionItem {
 
 export function useTransactions(accountSlug?: string) {
   type TransactionResponseRow = TransactionRow & {
+    wallet: WalletSummary | null;
     latestActivity: {
       actorId: string | null;
       actorName: string | null;
@@ -59,6 +61,7 @@ export function useTransactions(accountSlug?: string) {
           id: row.id,
           accountId: row.accountId,
           walletId: row.walletId,
+          wallet: row.wallet ?? null,
           memberId: row.memberId,
           type: row.type,
           title: row.title,
