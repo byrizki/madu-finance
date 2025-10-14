@@ -29,7 +29,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ acc
 
     const accountSlug = resolved.context.account.slug;
     const body = await request.json();
-    const { name, type, provider, monthlyAmount, remainingAmount, dueDate, status } = body ?? {};
+    const { name, type, provider, monthlyAmount, remainingAmount, remainingPayments, dueDate, status } = body ?? {};
 
     if (!name || !type || monthlyAmount === undefined || remainingAmount === undefined || !dueDate) {
       return NextResponse.json(
@@ -38,12 +38,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ acc
       );
     }
 
+    const parsedRemainingPayments =
+      remainingPayments === undefined || remainingPayments === null ? null : Number(remainingPayments);
+
+    if (Number.isNaN(parsedRemainingPayments)) {
+      return NextResponse.json({ error: "remainingPayments must be a number" }, { status: 400 });
+    }
+
     const installment = await createInstallment(accountSlug, {
       name,
       type,
       provider,
       monthlyAmount: Number(monthlyAmount),
       remainingAmount: Number(remainingAmount),
+      remainingPayments: parsedRemainingPayments,
       dueDate: new Date(dueDate),
       status,
     });

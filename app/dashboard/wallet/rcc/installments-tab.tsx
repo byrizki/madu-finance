@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
+
 import { Calendar, AlertCircle, Clock, PiggyBank } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MaskedValue } from "@/components/dashboard/masked-value";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { InstallmentItem } from "@/hooks/use-installments";
 
 import { getInstallmentStatus, getStatusBadge, getWalletColor } from "./wallet-utils";
@@ -16,6 +19,7 @@ interface WalletInstallmentsTabProps {
   onAddInstallment: () => void;
   onPayInstallment: (installment: InstallmentItem) => void;
   onShowDetail: (installment: InstallmentItem) => void;
+  onEditInstallment: (installment: InstallmentItem) => void;
   formatDate: (value: string | null) => string;
   getDaysUntilDue: (value: string | null) => number | null;
 }
@@ -26,10 +30,12 @@ function WalletInstallmentsTab({
   onAddInstallment,
   onPayInstallment,
   onShowDetail,
+  onEditInstallment,
   formatDate,
   getDaysUntilDue,
 }: WalletInstallmentsTabProps) {
   const isInstallmentsEmpty = !installmentsLoading && installmentList.length === 0;
+  const [remainingView, setRemainingView] = useState<"amount" | "payments">("amount");
 
   if (installmentsLoading) {
     return (
@@ -86,94 +92,132 @@ function WalletInstallmentsTab({
   }
 
   return (
-    <div className="grid gap-2.5 sm:grid-cols-2">
-      {installmentList.map((installment, index) => {
-        const status = getInstallmentStatus(installment.dueDate, installment.status);
-        const daysUntilDue = getDaysUntilDue(installment.dueDate);
-        const isOverdue = daysUntilDue !== null && daysUntilDue < 0;
-        const isDueSoon = daysUntilDue !== null && daysUntilDue <= 3 && daysUntilDue >= 0;
-        const accentColor = getWalletColor(installment.provider ? null : undefined, index);
+    <div className="space-y-3">
+      <div className="flex items-center justify-end">
+        <ToggleGroup
+          type="single"
+          value={remainingView}
+          onValueChange={(value) => {
+            if (value === "amount" || value === "payments") {
+              setRemainingView(value);
+            }
+          }}
+          variant="outline"
+          size="sm"
+          aria-label="Pilih tampilan sisa cicilan"
+        >
+          <ToggleGroupItem value="amount">Sisa tagihan</ToggleGroupItem>
+          <ToggleGroupItem value="payments">Sisa kali bayar</ToggleGroupItem>
+        </ToggleGroup>
+      </div>
 
-        return (
-          <Card
-            key={installment.id}
-            className={`border border-border/60 bg-card/80 shadow-none transition-transform hover:-translate-y-0.5 hover:shadow-sm ${
-              isOverdue
-                ? "border-red-200 bg-red-50/60 dark:bg-red-950/20"
-                : isDueSoon
-                ? "border-amber-200 bg-amber-50/60 dark:bg-amber-950/20"
-                : ""
-            }`}
-          >
-            <CardContent className="flex flex-col gap-3.5 p-3.5">
-              <div className="flex items-start justify-between gap-2.5">
-                <div className="flex items-center gap-2.5">
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-full ${accentColor} text-white`}>
-                    <PiggyBank className="h-4.5 w-4.5" />
+      <div className="grid gap-2.5 sm:grid-cols-2">
+        {installmentList.map((installment, index) => {
+          const status = getInstallmentStatus(installment.dueDate, installment.status);
+          const daysUntilDue = getDaysUntilDue(installment.dueDate);
+          const isOverdue = daysUntilDue !== null && daysUntilDue < 0;
+          const isDueSoon = daysUntilDue !== null && daysUntilDue <= 3 && daysUntilDue >= 0;
+          const accentColor = getWalletColor(installment.provider ? null : undefined, index);
+          const remainingPaymentsDisplay =
+            installment.remainingPayments === null || installment.remainingPayments === undefined
+              ? "-"
+              : `${installment.remainingPayments}x`;
+
+          return (
+            <Card
+              key={installment.id}
+              className={`border border-border/60 bg-card/80 shadow-none transition-transform hover:-translate-y-0.5 hover:shadow-sm ${
+                isOverdue
+                  ? "border-red-200 bg-red-50/60 dark:bg-red-950/20"
+                  : isDueSoon
+                  ? "border-amber-200 bg-amber-50/60 dark:bg-amber-950/20"
+                  : ""
+              }`}
+            >
+              <CardContent className="flex flex-col gap-3.5 p-3.5">
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-full ${accentColor} text-white`}>
+                      <PiggyBank className="h-4.5 w-4.5" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-foreground">{installment.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {[installment.provider, installment.type].filter(Boolean).join(" • ") || "Tidak ada info tambahan"}
+                      </p>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold text-foreground">{installment.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {[installment.provider, installment.type].filter(Boolean).join(" • ") || "Tidak ada info tambahan"}
-                    </p>
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(status)}
+                    {(isOverdue || isDueSoon) && (
+                      <AlertCircle className={`h-4 w-4 ${isOverdue ? "text-red-500" : "text-amber-500"}`} />
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {getStatusBadge(status)}
-                  {(isOverdue || isDueSoon) && (
-                    <AlertCircle className={`h-4 w-4 ${isOverdue ? "text-red-500" : "text-amber-500"}`} />
+
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Tagihan per bayar</span>
+                    <MaskedValue className="font-medium text-foreground" value={installment.monthlyAmount} />
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      {remainingView === "amount" ? "Sisa tagihan" : "Sisa kali bayar"}
+                    </span>
+                    {remainingView === "amount" ? (
+                      <MaskedValue className="font-medium text-foreground" value={installment.remainingAmount} />
+                    ) : (
+                      <span className="font-medium text-foreground">{remainingPaymentsDisplay}</span>
+                    )}
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Jatuh tempo</span>
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-3 w-3 text-muted-foreground" />
+                      <span className={`font-medium ${isOverdue ? "text-red-600" : isDueSoon ? "text-amber-600" : ""}`}>
+                        {formatDate(installment.dueDate)}
+                      </span>
+                    </div>
+                  </div>
+                  {daysUntilDue !== null && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{isOverdue ? "Terlambat" : "Sisa hari"}</span>
+                      <span className={`font-medium ${isDueSoon ? "text-amber-600" : ""}`}>{Math.abs(daysUntilDue)} hari</span>
+                    </div>
                   )}
                 </div>
-              </div>
 
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Cicilan bulanan</span>
-                  <MaskedValue className="font-medium text-foreground" value={installment.monthlyAmount} />
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    size="sm"
+                    className={`rounded-full ${
+                      isOverdue
+                        ? "bg-red-600 hover:bg-red-700"
+                        : isDueSoon
+                        ? "bg-amber-600 hover:bg-amber-700"
+                        : "bg-primary hover:bg-primary/90"
+                    } text-primary-foreground`}
+                    onClick={() => onPayInstallment(installment)}
+                  >
+                    Bayar sekarang
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full px-2.5"
+                    onClick={() => onEditInstallment(installment)}
+                  >
+                    Edit
+                  </Button>
+                  <Button size="sm" variant="ghost" className="rounded-full px-2.5" onClick={() => onShowDetail(installment)}>
+                    Detail
+                  </Button>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Sisa hutang</span>
-                  <MaskedValue className="font-medium text-foreground" value={installment.remainingAmount} />
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Jatuh tempo</span>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3 text-muted-foreground" />
-                    <span className={`font-medium ${isOverdue ? "text-red-600" : isDueSoon ? "text-amber-600" : ""}`}>
-                      {formatDate(installment.dueDate)}
-                    </span>
-                  </div>
-                </div>
-                {daysUntilDue !== null && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{isOverdue ? "Terlambat" : "Sisa hari"}</span>
-                    <span className={`font-medium ${isDueSoon ? "text-amber-600" : ""}`}>{Math.abs(daysUntilDue)} hari</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  size="sm"
-                  className={`rounded-full ${
-                    isOverdue
-                      ? "bg-red-600 hover:bg-red-700"
-                      : isDueSoon
-                      ? "bg-amber-600 hover:bg-amber-700"
-                      : "bg-primary hover:bg-primary/90"
-                  } text-primary-foreground`}
-                  onClick={() => onPayInstallment(installment)}
-                >
-                  Bayar sekarang
-                </Button>
-                <Button size="sm" variant="outline" className="rounded-full px-2.5" onClick={() => onShowDetail(installment)}>
-                  Detail
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }

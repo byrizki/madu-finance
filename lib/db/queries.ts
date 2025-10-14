@@ -1507,6 +1507,7 @@ export async function createInstallment(
     provider?: string | null;
     monthlyAmount: number;
     remainingAmount: number;
+    remainingPayments?: number | null;
     dueDate: Date;
     status?: "upcoming" | "overdue" | "paid";
   }
@@ -1521,6 +1522,7 @@ export async function createInstallment(
       provider: values.provider ?? null,
       monthlyAmount: values.monthlyAmount.toString(),
       remainingAmount: values.remainingAmount.toString(),
+      remainingPayments: values.remainingPayments ?? null,
       dueDate: values.dueDate.toISOString().split("T")[0],
       status: values.status ?? "upcoming",
     })
@@ -1538,6 +1540,7 @@ export async function updateInstallment(
     provider?: string | null;
     monthlyAmount?: number;
     remainingAmount?: number;
+    remainingPayments?: number | null;
     dueDate?: Date;
     status?: "upcoming" | "overdue" | "paid";
   }
@@ -1551,6 +1554,7 @@ export async function updateInstallment(
       provider: values.provider,
       monthlyAmount: values.monthlyAmount !== undefined ? values.monthlyAmount.toString() : undefined,
       remainingAmount: values.remainingAmount !== undefined ? values.remainingAmount.toString() : undefined,
+      remainingPayments: values.remainingPayments ?? undefined,
       dueDate: values.dueDate ? values.dueDate.toISOString().split("T")[0] : undefined,
       status: values.status,
       updatedAt: new Date(),

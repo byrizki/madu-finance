@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgEnum, pgTable, uuid, text, timestamp, numeric, date, uniqueIndex, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, uuid, text, timestamp, numeric, date, uniqueIndex, boolean, jsonb, integer } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export * from "./auth-schema";
@@ -152,6 +152,7 @@ export const installments = pgTable("installments", {
   provider: text("provider"),
   monthlyAmount: numeric("monthly_amount", { precision: 12, scale: 2 }).notNull(),
   remainingAmount: numeric("remaining_amount", { precision: 12, scale: 2 }).notNull(),
+  remainingPayments: integer("remaining_payments"),
   dueDate: date("due_date").notNull(),
   status: installmentStatusEnum("status").default("upcoming").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

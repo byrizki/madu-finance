@@ -22,7 +22,7 @@ export async function PATCH(
 
     const accountSlug = resolved.context.account.slug;
     const body = await request.json();
-    const { name, type, provider, monthlyAmount, remainingAmount, dueDate, status } = body ?? {};
+    const { name, type, provider, monthlyAmount, remainingAmount, remainingPayments, dueDate, status } = body ?? {};
 
     if (
       name === undefined &&
@@ -30,10 +30,18 @@ export async function PATCH(
       provider === undefined &&
       monthlyAmount === undefined &&
       remainingAmount === undefined &&
+      remainingPayments === undefined &&
       dueDate === undefined &&
       status === undefined
     ) {
       return NextResponse.json({ error: "At least one field must be provided" }, { status: 400 });
+    }
+
+    const parsedRemainingPayments =
+      remainingPayments === undefined || remainingPayments === null ? undefined : Number(remainingPayments);
+
+    if (parsedRemainingPayments !== undefined && Number.isNaN(parsedRemainingPayments)) {
+      return NextResponse.json({ error: "remainingPayments must be a number" }, { status: 400 });
     }
 
     const updated = await updateInstallment(accountSlug, installmentId, {
@@ -42,6 +50,7 @@ export async function PATCH(
       provider,
       monthlyAmount: monthlyAmount !== undefined ? Number(monthlyAmount) : undefined,
       remainingAmount: remainingAmount !== undefined ? Number(remainingAmount) : undefined,
+      remainingPayments: parsedRemainingPayments,
       dueDate: dueDate ? new Date(dueDate) : undefined,
       status,
     });

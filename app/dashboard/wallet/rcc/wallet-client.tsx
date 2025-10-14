@@ -30,7 +30,9 @@ import DecreaseBalanceShell, { type DecreaseBalanceFormValues } from "./wallet-d
 import WalletAccountsTab from "./wallet-accounts-tab";
 import WalletInstallmentsTab from "./installments-tab";
 import NewWalletShell, { type NewWalletFormValues } from "./wallet-new-shell";
-import { submitAddInstallment, submitPayInstallment } from "./installment-service";
+import InstallmentEditShell from "./installment-edit-shell";
+import { submitAddInstallment, submitEditInstallment, submitPayInstallment } from "./installment-service";
+import type { InstallmentFormValues } from "./installment-form-shell";
 import type { ServiceResult } from "./service-types";
 import { submitAddWallet, submitDecreaseBalance, submitIncreaseBalance } from "./wallet-service";
 
@@ -331,6 +333,55 @@ function WalletClient({ accountSlugOverride }: WalletClientProps = {}) {
     handleDetailOpenChange(true);
   };
 
+  const [editInstallmentOpen, setEditInstallmentOpen] = useState(false);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editingInstallment, setEditingInstallment] = useState<InstallmentItem | null>(null);
+
+  const handleEditOpenChange = (open: boolean) => {
+    setEditInstallmentOpen(open);
+    if (!open) {
+      setEditSubmitting(false);
+      setEditingInstallment(null);
+    }
+  };
+
+  const openEditInstallment = (installment: InstallmentItem) => {
+    if (!ensureAccount()) {
+      return;
+    }
+    setEditingInstallment(installment);
+    handleEditOpenChange(true);
+  };
+
+  const handleEditInstallmentSubmit = async (values: InstallmentFormValues) => {
+    if (!ensureAccount()) {
+      return;
+    }
+
+    if (!editingInstallment) {
+      toast.error("Cicilan kamu nggak ketemu");
+      return;
+    }
+
+    setEditSubmitting(true);
+
+    try {
+      const result = await submitEditInstallment({
+        accountSlug: resolvedAccountSlug,
+        queryClient,
+        installmentId: editingInstallment.id,
+        installmentName: editingInstallment.name,
+        values,
+      });
+
+      if (showServiceToast(result)) {
+        handleEditOpenChange(false);
+      }
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
   const headerConfig =
     activeTab === "accounts"
       ? {
@@ -408,6 +459,7 @@ function WalletClient({ accountSlugOverride }: WalletClientProps = {}) {
               onAddInstallment={openAddInstallment}
               onPayInstallment={openPayInstallment}
               onShowDetail={openInstallmentDetail}
+              onEditInstallment={openEditInstallment}
               formatDate={formatDate}
               getDaysUntilDue={getDaysUntilDue}
             />
@@ -453,6 +505,13 @@ function WalletClient({ accountSlugOverride }: WalletClientProps = {}) {
           open={detailOpen}
           installment={detailInstallment}
           onOpenChange={handleDetailOpenChange}
+        />
+        <InstallmentEditShell
+          open={editInstallmentOpen}
+          submitting={editSubmitting}
+          installment={editingInstallment}
+          onOpenChange={handleEditOpenChange}
+          onSubmit={handleEditInstallmentSubmit}
         />
       </div>
       {showAccountPlaceholder ? (

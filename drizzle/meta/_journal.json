@@ -43,6 +43,13 @@
       "when": 1759992616268,
       "tag": "0005_bouncy_bucky",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1760358962095,
+      "tag": "0006_fearless_sasquatch",
+      "breakpoints": true
     }
   ]
 }

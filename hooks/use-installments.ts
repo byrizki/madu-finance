@@ -15,6 +15,7 @@ export interface InstallmentItem {
   provider: string | null;
   monthlyAmount: number;
   remainingAmount: number;
+  remainingPayments: number | null;
   dueDate: string;
   status: InstallmentStatus;
   createdAt: string;
@@ -45,6 +46,7 @@ export function useInstallments(accountSlug?: string) {
           provider: row.provider,
           monthlyAmount: Number(row.monthlyAmount ?? "0"),
           remainingAmount: Number(row.remainingAmount ?? "0"),
+          remainingPayments: row.remainingPayments === null || row.remainingPayments === undefined ? null : Number(row.remainingPayments),
           dueDate: row.dueDate,
           status: row.status,
           createdAt: row.createdAt,

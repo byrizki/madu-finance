@@ -1,0 +1,1 @@
+ALTER TABLE "installments" ADD COLUMN "remaining_payments" integer;
