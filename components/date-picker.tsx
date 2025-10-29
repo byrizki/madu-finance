@@ -140,7 +140,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(function
         disabled={disabled}
         {...rest}
       />
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} modal onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <button
             type="button"

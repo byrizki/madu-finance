@@ -430,7 +430,7 @@ function AccountCard({
                 const otherMembersCount = otherMembers.length;
                 return (
                   <div key={member.id} className="flex">
-                    <Popover>
+                    <Popover modal>
                       <PopoverTrigger asChild>
                         <button
                           type="button"

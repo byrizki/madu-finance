@@ -1,9 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap');
+
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --font-quicksand: 'Quicksand', sans-serif;
   /* Clean, minimal light theme */
   --background: oklch(0.995 0.002 210); /* Soft neutral white */
   --foreground: oklch(0.24 0.047 250); /* Charcoal navy */
