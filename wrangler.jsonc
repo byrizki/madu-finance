@@ -11,6 +11,10 @@
     // see https://developers.cloudflare.com/workers/configuration/compatibility-flags/#global-fetch-strictly-public
     "global_fetch_strictly_public",
   ],
+  "build": {
+    // This ensures Wrangler doesn't try to bundle Node-only deps like @opentelemetry/api
+    "external": ["@opentelemetry/api"]
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS",
