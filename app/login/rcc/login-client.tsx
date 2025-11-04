@@ -206,7 +206,7 @@ export default function LoginClient() {
           ux_mode: "popup",
           context: "signin",
           nonce: nonceHash,
-          auto_select: true,
+          auto_select: false,
           itp_support: true,
           use_fedcm_for_prompt: true,
         });
