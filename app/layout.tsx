@@ -13,6 +13,7 @@ const fontQuicksand = Quicksand({
   subsets: ["latin"],
   variable: "--font-quicksand",
 });
+
 export const metadata: Metadata = {
   title: "byMADU - Kelola Keuangan Anda",
   description: "Aplikasi keuangan personal untuk mengelola anggaran dan transaksi Anda",
