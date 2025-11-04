@@ -5,9 +5,12 @@ import Link from "next/link";
 import { useAuthSession } from "@/components/providers/auth-provider";
 import { FloatingFinanceIcons } from "../components/landingpage/floating-finance-icons";
 import { HeroRotator } from "../components/landingpage/hero-rotator";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LandingPage() {
   const { session } = useAuthSession();
+  const router = useRouter();
 
   const primaryCta = session
     ? {
@@ -30,6 +33,12 @@ export default function LandingPage() {
         href: "/login",
         label: "Login aja",
       };
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      router.push("/dashboard");
+    }
+  }, [session])
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6 py-16 text-foreground">
