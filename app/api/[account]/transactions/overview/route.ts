@@ -10,7 +10,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ acco
       return resolved.response;
     }
 
-    const overview = await getTransactionOverview(resolved.context.account.slug);
+    const url = new URL(request.url);
+    const monthsParam = url.searchParams.get("months");
+    const months = monthsParam ? parseInt(monthsParam, 10) : 6;
+
+    const overview = await getTransactionOverview(resolved.context.account.slug, months);
 
     return NextResponse.json(overview);
   } catch (error) {

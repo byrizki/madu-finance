@@ -32,11 +32,13 @@ export function DashboardContent({
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">Transaksi terbaru</h2>
-          <Button variant="ghost" size="sm" className="rounded-full" onClick={onViewAllTransactions}>
-            Lihat semua
-          </Button>
         </div>
-        <RecentTransactions transactions={transactions} isLoading={transactionsLoading} error={transactionsError} />
+        <RecentTransactions 
+          transactions={transactions} 
+          isLoading={transactionsLoading} 
+          error={transactionsError}
+          onViewAll={onViewAllTransactions}
+        />
       </section>
     </div>
   );

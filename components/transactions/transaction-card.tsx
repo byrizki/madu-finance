@@ -399,6 +399,7 @@ export function TransactionCard({ transaction, className, onEdit, onDelete, acco
               <TransactionFormFields
                 form={editForm}
                 accountSlug={accountSlug}
+                transactionType={transaction.type}
                 walletOptions={walletOptions}
                 walletsLoading={walletsLoading}
                 isSubmitting={editForm.formState.isSubmitting}

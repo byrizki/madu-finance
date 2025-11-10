@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, ReceiptText } from "lucide-react";
+import { BarChart3, ReceiptText, Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,30 @@ export function BudgetHeader({ activeTab, budgetsLoading, transactionsLoading, o
       title={getTitle()}
       description={getDescription()}
       subContent={
-        !isOverview ? (
+        isOverview ? (
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              size="sm"
+              disabled={transactionsLoading}
+              onClick={onOpenTransactionModal}
+              className="h-auto flex-col gap-1.5 rounded-xl px-3 py-3 text-primary transition hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-60"
+              variant="ghost"
+            >
+              <ReceiptText className="h-5 w-5" aria-hidden="true" />
+              <span className="text-xs font-medium">Transaksi Baru</span>
+            </Button>
+            <Button
+              size="sm"
+              disabled={budgetsLoading}
+              onClick={onOpenBudgetModal}
+              className="h-auto flex-col gap-1.5 rounded-xl px-3 py-3 text-primary transition hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-60"
+              variant="ghost"
+            >
+              <BarChart3 className="h-5 w-5" aria-hidden="true" />
+              <span className="text-xs font-medium">Anggaran Baru</span>
+            </Button>
+          </div>
+        ) : (
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               size="lg"
@@ -62,7 +85,7 @@ export function BudgetHeader({ activeTab, budgetsLoading, transactionsLoading, o
               <span className="text-sm font-semibold">{quickActionLabel}</span>
             </Button>
           </div>
-        ) : undefined
+        )
       }
     />
   );

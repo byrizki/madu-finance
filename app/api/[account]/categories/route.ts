@@ -13,11 +13,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ acco
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") ?? undefined;
+    const type = searchParams.get("type");
+    const transactionType = type === "income" || type === "expense" ? type : undefined;
     const limitParam = searchParams.get("limit");
     const limit = limitParam ? Number.parseInt(limitParam, 10) : undefined;
 
     const categories = await getAccountCategorySuggestions(resolved.context.account.slug, {
       search,
+      transactionType,
       limit: Number.isNaN(limit) ? undefined : limit,
     });
 

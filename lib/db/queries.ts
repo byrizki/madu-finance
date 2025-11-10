@@ -548,19 +548,26 @@ export async function getRecentTransactions(accountSlug: string, limit = 10) {
 
 export async function getAccountCategorySuggestions(
   accountSlug: string,
-  options: { search?: string; limit?: number } = {},
+  options: { search?: string; transactionType?: "income" | "expense"; limit?: number } = {},
 ) {
   const accountId = await requireAccountId(accountSlug);
   const searchTerm = options.search?.trim() ?? "";
   const limit = Math.min(Math.max(options.limit ?? 10, 1), 50);
 
-  const transactionWhere = searchTerm
-    ? and(eq(transactions.accountId, accountId), ilike(transactions.category, `${searchTerm}%`))
-    : eq(transactions.accountId, accountId);
+  const transactionConditions = [eq(transactions.accountId, accountId)];
+  if (searchTerm) {
+    transactionConditions.push(ilike(transactions.category, `${searchTerm}%`));
+  }
+  if (options.transactionType) {
+    transactionConditions.push(eq(transactions.type, options.transactionType));
+  }
+  const transactionWhere = and(...transactionConditions);
 
-  const budgetWhere = searchTerm
-    ? and(eq(budgets.accountId, accountId), ilike(budgets.category, `${searchTerm}%`))
-    : eq(budgets.accountId, accountId);
+  const budgetConditions = [eq(budgets.accountId, accountId)];
+  if (searchTerm) {
+    budgetConditions.push(ilike(budgets.category, `${searchTerm}%`));
+  }
+  const budgetWhere = and(...budgetConditions);
 
   const [transactionRows, budgetRows] = await Promise.all([
     db
@@ -1595,11 +1602,22 @@ export async function deleteInstallment(accountSlug: string, installmentId: stri
   return deleted.length > 0;
 }
 
-export async function getTransactionOverview(accountSlug: string) {
+export async function getTransactionOverview(accountSlug: string, months: number = 6) {
   const accountId = await requireAccountId(accountSlug);
   
+  // Calculate date filter
+  let dateFilter = eq(transactions.accountId, accountId);
+  if (months > 0) {
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - months);
+    dateFilter = and(
+      eq(transactions.accountId, accountId),
+      gte(transactions.occurredAt, startDate)
+    ) as any;
+  }
+  
   const allTransactions = await db.query.transactions.findMany({
-    where: eq(transactions.accountId, accountId),
+    where: dateFilter,
     columns: {
       type: true,
       category: true,
@@ -1642,7 +1660,7 @@ export async function getTransactionOverview(accountSlug: string) {
 
   const sortedMonths = Array.from(monthMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
-    .slice(-6);
+    .slice(months > 0 && months <= 12 ? -months : -6);
 
   const monthlyData = sortedMonths.map(([key, data]) => {
     const [year, month] = key.split("-");

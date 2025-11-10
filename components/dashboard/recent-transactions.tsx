@@ -1,6 +1,7 @@
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -13,9 +14,10 @@ interface RecentTransactionsProps {
   transactions?: TransactionItem[];
   isLoading?: boolean;
   error?: Error | null;
+  onViewAll?: () => void;
 }
 
-export function RecentTransactions({ transactions, isLoading, error }: RecentTransactionsProps) {
+export function RecentTransactions({ transactions, isLoading, error, onViewAll }: RecentTransactionsProps) {
   const router = useRouter();
   const items = transactions?.slice(0, 5) ?? [];
   const showEmpty = !isLoading && items.length === 0;
@@ -60,11 +62,25 @@ export function RecentTransactions({ transactions, isLoading, error }: RecentTra
           </div>
         </div>
       ) : (
-        <div className="space-y-2.5">
-          {items.map((transaction) => (
-            <TransactionCard key={transaction.id} transaction={transaction} />
-          ))}
-        </div>
+        <>
+          <div className="space-y-2.5">
+            {items.map((transaction) => (
+              <TransactionCard key={transaction.id} transaction={transaction} />
+            ))}
+          </div>
+          {onViewAll && items.length > 0 && (
+            <div className="flex justify-center pt-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="rounded-full text-sm" 
+                onClick={onViewAll}
+              >
+                Lihat semua
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

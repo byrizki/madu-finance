@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowDownRight, Loader2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 
 import { TransactionCard } from "@/components/transactions/transaction-card";
 
@@ -43,18 +44,27 @@ export function TransactionList({
   const hasTransactions = filteredTransactions.length > 0;
   const queryClient = useQueryClient();
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const [showManualButton, setShowManualButton] = useState(false);
 
   // Intersection Observer for automatic infinite scroll
   useEffect(() => {
     if (!hasMore || !onLoadMore || isLoadingMore) return;
 
+    let timeoutId: NodeJS.Timeout;
+    
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
+        if (entries[0].isIntersecting && !isLoadingMore) {
           onLoadMore();
+          // Show manual button after 3 seconds if still visible
+          timeoutId = setTimeout(() => {
+            if (entries[0].isIntersecting) {
+              setShowManualButton(true);
+            }
+          }, 3000);
         }
       },
-      { threshold: 0.1, rootMargin: "100px" }
+      { threshold: 0, rootMargin: "200px" }
     );
 
     const currentRef = loadMoreRef.current;
@@ -63,11 +73,19 @@ export function TransactionList({
     }
 
     return () => {
+      clearTimeout(timeoutId);
       if (currentRef) {
         observer.unobserve(currentRef);
       }
     };
   }, [hasMore, onLoadMore, isLoadingMore]);
+
+  // Reset manual button when loading starts
+  useEffect(() => {
+    if (isLoadingMore) {
+      setShowManualButton(false);
+    }
+  }, [isLoadingMore]);
 
   const updateMutation = useMutation({
     mutationFn: async ({ transaction, slug }: { transaction: TransactionItem; slug: string }) => {
@@ -203,16 +221,38 @@ export function TransactionList({
                 </div>
               </div>
             ))}
-          {/* Intersection Observer Target */}
-          {hasMore && (
-            <div ref={loadMoreRef} className="flex justify-center py-4">
-              {isLoadingMore && (
+          {/* Intersection Observer Target / End Indicator */}
+          {hasMore ? (
+            <div ref={loadMoreRef} className="flex flex-col items-center gap-3 py-4">
+              {isLoadingMore ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span>Memuat transaksi...</span>
                 </div>
+              ) : (
+                showManualButton && onLoadMore && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowManualButton(false);
+                      onLoadMore();
+                    }}
+                    className="gap-2"
+                  >
+                    <span>Muat lebih banyak</span>
+                  </Button>
+                )
               )}
             </div>
+          ) : (
+            hasTransactions && (
+              <div className="flex justify-center py-4">
+                <p className="text-xs text-muted-foreground">
+                  Semua transaksi telah dimuat
+                </p>
+              </div>
+            )
           )}
         </>
       )}

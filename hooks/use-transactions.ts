@@ -132,13 +132,18 @@ export interface TransactionOverview {
   }>;
 }
 
-export function useTransactionOverview(accountSlug?: string) {
+export function useTransactionOverview(accountSlug?: string, monthRange: number = 6) {
   return useQuery<TransactionOverview, Error>({
-    queryKey: ["transaction-overview", accountSlug],
+    queryKey: ["transaction-overview", accountSlug, monthRange],
     enabled: Boolean(accountSlug),
     queryFn: async () => {
       try {
-        const response = await fetch(`/api/${accountSlug}/transactions/overview`);
+        const url = new URL(`/api/${accountSlug}/transactions/overview`, window.location.origin);
+        if (monthRange > 0) {
+          url.searchParams.set("months", monthRange.toString());
+        }
+        
+        const response = await fetch(url.toString());
         if (!response.ok) {
           if (response.status === 403) {
             throw createUnauthorizedAccountError();

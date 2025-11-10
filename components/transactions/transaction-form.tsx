@@ -34,6 +34,7 @@ export const NO_WALLET_OPTION_VALUE = "no-wallet";
 interface TransactionFormFieldsProps {
   form: UseFormReturn<TransactionFormValues>;
   accountSlug?: string;
+  transactionType?: "income" | "expense";
   walletOptions: TransactionFormWalletOption[];
   walletsLoading: boolean;
   isSubmitting: boolean;
@@ -48,6 +49,7 @@ interface TransactionFormFieldsProps {
 export function TransactionFormFields({
   form,
   accountSlug,
+  transactionType,
   walletOptions,
   walletsLoading,
   isSubmitting,
@@ -163,6 +165,7 @@ export function TransactionFormFields({
                   value={field.value}
                   onChange={field.onChange}
                   accountSlug={accountSlug}
+                  transactionType={transactionType}
                   fallback={fallbackCategories}
                   placeholder={categoryPlaceholder}
                   disabled={isSubmitting}

@@ -359,6 +359,7 @@ export function QuickTransactionSheet({
           <TransactionFormFields
             form={form}
             accountSlug={accountSlug}
+            transactionType={activeType}
             walletOptions={walletOptions}
             walletsLoading={walletsLoading}
             isSubmitting={mutation.isPending}

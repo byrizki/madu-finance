@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 interface UseCategorySuggestionsOptions {
   accountSlug?: string;
   search: string;
+  transactionType?: "income" | "expense";
   limit?: number;
   fallback?: string[];
 }
@@ -29,6 +30,7 @@ function useDebouncedValue<T>(value: T, delay: number) {
 export function useCategorySuggestions({
   accountSlug,
   search,
+  transactionType,
   limit = 12,
   fallback = [],
 }: UseCategorySuggestionsOptions): CategorySuggestionsResult {
@@ -58,6 +60,9 @@ export function useCategorySuggestions({
     if (debouncedSearch) {
       params.set("search", debouncedSearch);
     }
+    if (transactionType) {
+      params.set("type", transactionType);
+    }
     if (limit) {
       params.set("limit", String(limit));
     }
@@ -84,7 +89,7 @@ export function useCategorySuggestions({
     } finally {
       setIsLoading(false);
     }
-  }, [accountSlug, debouncedSearch, limit]);
+  }, [accountSlug, debouncedSearch, transactionType, limit]);
 
   useEffect(() => {
     fetchSuggestions();

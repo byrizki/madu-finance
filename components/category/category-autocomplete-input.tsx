@@ -42,6 +42,7 @@ interface CategoryAutocompleteInputProps
   value: string;
   onChange: (value: string) => void;
   accountSlug?: string;
+  transactionType?: "income" | "expense";
   fallback?: ReadonlyArray<string>;
   suggestionsLimit?: number;
   emptyMessage?: string;
@@ -52,6 +53,7 @@ export function CategoryAutocompleteInput({
   value,
   onChange,
   accountSlug,
+  transactionType,
   fallback = [],
   suggestionsLimit,
   className,
@@ -90,6 +92,7 @@ export function CategoryAutocompleteInput({
   const { suggestions, isLoading } = useCategorySuggestions({
     accountSlug,
     search,
+    transactionType,
     limit: suggestionsLimit,
     fallback: Array.from(new Set(fallback)).filter(Boolean),
   });

@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowDownRight, ArrowUpRight, TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, TrendingUp, TrendingDown, Calendar } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTransactionOverview } from "@/hooks/use-transactions";
 import { MaskedValue } from "@/components/dashboard/masked-value";
 
@@ -108,9 +109,11 @@ const CustomBarTooltip = ({ active, payload, label, isMobile }: CustomTooltipPro
 };
 
 export function TransactionOverview({ accountSlug }: TransactionOverviewProps) {
-  const { data: overview, isLoading } = useTransactionOverview(accountSlug);
+  const [monthRange, setMonthRange] = useState<number>(6);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  
+  const { data: overview, isLoading } = useTransactionOverview(accountSlug, monthRange);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 640);
@@ -135,10 +138,10 @@ export function TransactionOverview({ accountSlug }: TransactionOverviewProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 animate-in fade-in duration-300">
         <div className="grid gap-3 grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} className="border-border/50">
+            <Card key={i} className="border-border/50 py-3 animate-in fade-in slide-in-from-bottom-2" style={{ animationDelay: `${i * 50}ms` }}>
               <CardContent className="p-4">
                 <Skeleton className="h-4 w-20 mb-2" />
                 <Skeleton className="h-6 w-24" />
@@ -146,22 +149,24 @@ export function TransactionOverview({ accountSlug }: TransactionOverviewProps) {
             </Card>
           ))}
         </div>
-        <Card className="border-border/50">
-          <CardHeader className="pb-3">
-            <Skeleton className="h-5 w-32" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-64 w-full" />
-          </CardContent>
-        </Card>
-        <Card className="border-border/50">
-          <CardHeader className="pb-3">
-            <Skeleton className="h-5 w-32" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-64 w-full" />
-          </CardContent>
-        </Card>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card className="border-border/50 animate-in fade-in slide-in-from-bottom-3" style={{ animationDelay: '200ms' }}>
+            <CardHeader className="pb-3">
+              <Skeleton className="h-5 w-32" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-64 w-full rounded-lg" />
+            </CardContent>
+          </Card>
+          <Card className="border-border/50 animate-in fade-in slide-in-from-bottom-3" style={{ animationDelay: '250ms' }}>
+            <CardHeader className="pb-3">
+              <Skeleton className="h-5 w-32" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-64 w-full rounded-lg" />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -170,6 +175,28 @@ export function TransactionOverview({ accountSlug }: TransactionOverviewProps) {
 
   return (
     <div className="space-y-4">
+      {/* Month Range Filter */}
+      <Card className="border-border/50">
+        <CardContent className="flex items-center justify-between px-3 py-2">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Calendar className="h-3.5 w-3.5" />
+            <span className="font-medium">Periode</span>
+          </div>
+          <Select value={monthRange.toString()} onValueChange={(value) => setMonthRange(Number(value))}>
+            <SelectTrigger className="w-[140px] h-7 text-xs border-0 bg-muted/50">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">1 bulan</SelectItem>
+              <SelectItem value="3">3 bulan</SelectItem>
+              <SelectItem value="6">6 bulan</SelectItem>
+              <SelectItem value="12">12 bulan</SelectItem>
+              <SelectItem value="0">Semua</SelectItem>
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+
       {/* Stats Cards - Mobile First 2 Column Grid */}
       <div className="grid gap-3 grid-cols-2">
         <Card className="border-border/50 py-3">
