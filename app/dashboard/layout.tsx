@@ -2,17 +2,18 @@ import type { ReactNode } from "react";
 
 import { MemberProvider } from "@/components/context/member-context";
 import { AdaptiveLayout } from "@/components/layout/adaptive-layout";
-import { Metadata } from "next";
+import { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
   title: "Dashboard - byMADU 🐝",
   description: "Aplikasi keuangan personal untuk mengelola anggaran dan transaksi Anda",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 interface DashboardLayoutProps {
