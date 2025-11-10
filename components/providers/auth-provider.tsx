@@ -85,6 +85,6 @@ export function useAuthSession() {
 
 export function useAuthUser() {
   const { session, isReady } = useAuth();
-  const user = (session as { user?: unknown } | null)?.user ?? null;
+  const user: AuthUser | null = (session as { user?: AuthUser } | null)?.user ?? null;
   return { user, session, isReady };
 }

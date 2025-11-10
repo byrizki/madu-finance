@@ -133,20 +133,6 @@ export function ProfileChangePasswordDialog({
           />
           {errors.confirmPassword ? <p className="text-xs text-destructive">{errors.confirmPassword.message}</p> : null}
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <Button type="submit" disabled={submitting || isSubmitting} className="w-full sm:w-auto">
-            {submitting || isSubmitting ? "Mengubah..." : "Simpan kata sandi"}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => onOpenChange(false)}
-            disabled={submitting || isSubmitting}
-            className="w-full sm:w-auto"
-          >
-            Batal
-          </Button>
-        </div>
       </form>
     </ModalShell>
   );

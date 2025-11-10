@@ -65,7 +65,7 @@ export default function ProfileClient() {
   const isMobile = useIsMobile();
   const shimmerStyle = createProfileShimmerStyle();
   const router = useRouter();
-  const { refreshSession, signOut } = useAuth();
+  const { refreshSession, signOut, isReady } = useAuth();
   const {
     accounts: memberAccounts,
     isLoading: accountsLoading,
@@ -87,7 +87,7 @@ export default function ProfileClient() {
     removingKey: null,
   });
 
-  const isLoading = !isMounted || fetchLoading || !currentMember;
+  const isLoading = !isMounted || fetchLoading || !currentMember || !isReady;
   const isHydratingAccounts = accountsLoading && (!memberAccounts || memberAccounts.length === 0);
   const accountsBusy = accountsFetching || accountsRefetching;
   const mappedMember = currentMember?.name ? mapMember(currentMember) : null;

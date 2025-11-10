@@ -112,9 +112,9 @@ export function MemberProvider({ children, accountSlug }: MemberProviderProps) {
 
   useEffect(() => {
     if (memberData?.members?.length && !activeMemberId) {
-      setActiveMemberId(memberData.members[0].id);
+      setActiveMemberId(user?.id ?? memberData.members[0].id);
     }
-  }, [memberData?.members, activeMemberId]);
+  }, [memberData?.members, activeMemberId, user?.id]);
 
   const membersList = useMemo<Member[]>(() => {
     if (!memberData?.members) return [];
