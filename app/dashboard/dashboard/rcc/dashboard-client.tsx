@@ -43,7 +43,7 @@ export default function DashboardClient({ accountSlugOverride }: DashboardClient
   const effectiveAccountSlug = isAccountResolved ? resolvedAccountSlug : undefined;
   const { data: wallets, isLoading: walletsLoadingRaw, error: walletsError } = useWallets(effectiveAccountSlug);
   const {
-    data: transactions,
+    data: transactionsData,
     isLoading: transactionsLoadingRaw,
     error: transactionsError,
   } = useTransactions(effectiveAccountSlug);
@@ -61,14 +61,19 @@ export default function DashboardClient({ accountSlugOverride }: DashboardClient
 
   const unauthorizedError = [walletsError, transactionsError, installmentsError].find(isUnauthorizedAccountError);
 
+  // Flatten infinite query pages into simple array for dashboard
+  const transactions = useMemo(() => {
+    return transactionsData?.pages.flatMap((page) => page.items) ?? [];
+  }, [transactionsData]);
+
   const walletAggregate = useMemo(() => aggregateWallets(wallets ?? []), [wallets]);
-  const monthlyAggregate = useMemo(() => aggregateMonthly(transactions ?? []), [transactions]);
+  const monthlyAggregate = useMemo(() => aggregateMonthly(transactions), [transactions]);
   const installmentsTotal = useMemo(() => totalInstallmentAmount(installments ?? []), [installments]);
   const metrics = useMemo(
     () => buildOverviewMetrics({ wallets: walletAggregate, monthly: monthlyAggregate, installmentsTotal }),
     [walletAggregate, monthlyAggregate, installmentsTotal]
   );
-  const sortedTransactions = useMemo(() => sortTransactions(transactions ?? []), [transactions]);
+  const sortedTransactions = useMemo(() => sortTransactions(transactions), [transactions]);
   const quickInsight = useMemo(
     () => buildQuickInsight(showValues, isLoading, monthlyAggregate),
     [showValues, isLoading, monthlyAggregate]

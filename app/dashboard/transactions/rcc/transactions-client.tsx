@@ -22,6 +22,7 @@ import { BudgetOverview } from "./budget-overview";
 import { BudgetHeader } from "./budget-header";
 import { TransactionFilters } from "./transaction-filters";
 import { TransactionList } from "./transaction-list";
+import { TransactionOverview } from "./transaction-overview";
 import { calculateBudgetSummary, extractCategories, filterTransactions } from "./budgets-utils";
 import type { BudgetMetric } from "./budgets-types";
 
@@ -33,9 +34,11 @@ export default function BudgetsClient({ accountSlugOverride }: BudgetsClientProp
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"budgets" | "transactions">(() =>
-    searchParams.has("budgets") ? "budgets" : "transactions"
-  );
+  const [activeTab, setActiveTab] = useState<"overview" | "budgets" | "transactions">(() => {
+    if (searchParams.has("budgets")) return "budgets";
+    if (searchParams.has("transactions")) return "transactions";
+    return "overview";
+  });
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Semua Kategori");
   const [selectedType, setSelectedType] = useState("Semua Tipe");
@@ -50,10 +53,13 @@ export default function BudgetsClient({ accountSlugOverride }: BudgetsClientProp
   const isAccountResolved = Boolean(resolvedAccountSlug) && !isDefaultAccountLoading;
   const effectiveAccountSlug = isAccountResolved ? resolvedAccountSlug : undefined;
   const {
-    data: transactions,
+    data: transactionsData,
     isLoading: transactionsLoadingRaw,
     error: transactionsError,
-  } = useTransactions(effectiveAccountSlug);
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useTransactions(effectiveAccountSlug, 10);
   const { data: budgets, isLoading: budgetsLoadingRaw, error: budgetsError } = useBudgets(effectiveAccountSlug);
   const isMounted = useIsMounted();
   const transactionsLoading = !isMounted || transactionsLoadingRaw || !isAccountResolved;
@@ -61,28 +67,39 @@ export default function BudgetsClient({ accountSlugOverride }: BudgetsClientProp
 
   const unauthorizedError = [transactionsError, budgetsError].find(isUnauthorizedAccountError);
 
-  const transactionList = transactions ?? [];
+  const transactionList = transactionsData?.pages.flatMap((page) => page.items) ?? [];
   const budgetList = budgets ?? [];
 
   const showAccountPlaceholder = !isAccountResolved && !isDefaultAccountLoading;
 
   useEffect(() => {
-    setActiveTab(searchParams.has("budgets") ? "budgets" : "transactions");
+    if (searchParams.has("budgets")) {
+      setActiveTab("budgets");
+    } else if (searchParams.has("transactions")) {
+      setActiveTab("transactions");
+    } else {
+      setActiveTab("overview");
+    }
   }, [searchParams]);
 
   const handleTabChange = (value: string) => {
-    const nextTab = value === "transactions" ? "transactions" : "budgets";
+    const nextTab = value as "overview" | "budgets" | "transactions";
     setActiveTab(nextTab);
 
     const params = new URLSearchParams(searchParams.toString());
     params.delete("budgets");
+    params.delete("transactions");
     const baseQuery = params.toString();
-    const target =
-      nextTab === "budgets"
-        ? `${pathname}?${baseQuery ? `${baseQuery}&` : ""}budgets`
-        : baseQuery
-        ? `${pathname}?${baseQuery}`
-        : pathname;
+    
+    let target = pathname;
+    if (nextTab === "budgets") {
+      target = `${pathname}?${baseQuery ? `${baseQuery}&` : ""}budgets`;
+    } else if (nextTab === "transactions") {
+      target = `${pathname}?${baseQuery ? `${baseQuery}&` : ""}transactions`;
+    } else if (baseQuery) {
+      target = `${pathname}?${baseQuery}`;
+    }
+    
     router.replace(target, {
       scroll: false,
     });
@@ -165,6 +182,9 @@ export default function BudgetsClient({ accountSlugOverride }: BudgetsClientProp
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList>
+            <TabsTrigger value="overview" className="px-4">
+              Overview
+            </TabsTrigger>
             <TabsTrigger value="transactions" className="px-4">
               Transaksi
             </TabsTrigger>
@@ -172,6 +192,10 @@ export default function BudgetsClient({ accountSlugOverride }: BudgetsClientProp
               Anggaran
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="overview" className="mt-6 space-y-6">
+            <TransactionOverview accountSlug={resolvedAccountSlug} />
+          </TabsContent>
 
           <TabsContent value="budgets" className="mt-6 space-y-6">
             <BudgetOverview budgetList={budgetList} metrics={metrics} isLoading={budgetsLoading} />
@@ -200,6 +224,9 @@ export default function BudgetsClient({ accountSlugOverride }: BudgetsClientProp
               accountSlug={resolvedAccountSlug}
               filteredTransactions={filteredTransactions}
               isLoading={transactionsLoading}
+              onLoadMore={fetchNextPage}
+              hasMore={hasNextPage}
+              isLoadingMore={isFetchingNextPage}
             />
           </TabsContent>
         </Tabs>

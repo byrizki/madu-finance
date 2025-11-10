@@ -11,8 +11,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ acco
       return resolved.response;
     }
 
-    const rows = await getTransactions(resolved.context.account.slug);
-    return NextResponse.json({ transactions: rows });
+    const { searchParams } = new URL(request.url);
+    const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : undefined;
+    const cursor = searchParams.get("cursor") || undefined;
+
+    const result = await getTransactions(resolved.context.account.slug, { limit, cursor });
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Failed to fetch transactions", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

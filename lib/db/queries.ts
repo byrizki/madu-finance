@@ -842,10 +842,20 @@ export async function isAccountSlugAvailable(slug: string, options: { excludeSlu
   return normalizedExclude ? existing.slug === normalizedExclude : false;
 }
 
-export async function getTransactions(accountSlug: string) {
+export async function getTransactions(
+  accountSlug: string,
+  options: { limit?: number; cursor?: string } = {}
+) {
   const accountId = await requireAccountId(accountSlug);
+  const limit = options.limit ?? 50;
+  
+  const conditions = [eq(transactions.accountId, accountId)];
+  if (options.cursor) {
+    conditions.push(lt(transactions.occurredAt, new Date(options.cursor)));
+  }
+
   const rows = await db.query.transactions.findMany({
-    where: eq(transactions.accountId, accountId),
+    where: and(...conditions),
     with: {
       wallet: {
         columns: {
@@ -857,15 +867,25 @@ export async function getTransactions(accountSlug: string) {
       },
     },
     orderBy: (fields, operators) => operators.desc(fields.occurredAt),
-    limit: 100,
+    limit: limit + 1,
   });
 
-  const normalized = rows.map((row) => ({
+  const hasMore = rows.length > limit;
+  const items = hasMore ? rows.slice(0, limit) : rows;
+  const nextCursor = hasMore ? items[items.length - 1].occurredAt.toISOString() : null;
+
+  const normalized = items.map((row) => ({
     ...row,
     wallet: summarizeWallet(row.wallet),
   }));
 
-  return attachLatestActivities(accountId, normalized);
+  const withActivities = await attachLatestActivities(accountId, normalized);
+  
+  return {
+    items: withActivities,
+    nextCursor,
+    hasMore,
+  };
 }
 
 interface TransactionActorOptions {
@@ -1573,4 +1593,83 @@ export async function deleteInstallment(accountSlug: string, installmentId: stri
     .returning();
 
   return deleted.length > 0;
+}
+
+export async function getTransactionOverview(accountSlug: string) {
+  const accountId = await requireAccountId(accountSlug);
+  
+  const allTransactions = await db.query.transactions.findMany({
+    where: eq(transactions.accountId, accountId),
+    columns: {
+      type: true,
+      category: true,
+      amount: true,
+      occurredAt: true,
+    },
+    orderBy: (fields, operators) => operators.desc(fields.occurredAt),
+  });
+
+  let totalIncome = 0;
+  let totalExpense = 0;
+  const categoryMap = new Map<string, number>();
+  const monthMap = new Map<string, { income: number; expense: number }>();
+
+  allTransactions.forEach((txn) => {
+    const amount = parseNumeric(txn.amount);
+    const date = new Date(txn.occurredAt);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+    if (txn.type === "income") {
+      totalIncome += amount;
+      const month = monthMap.get(monthKey) || { income: 0, expense: 0 };
+      month.income += amount;
+      monthMap.set(monthKey, month);
+    } else {
+      totalExpense += amount;
+      const month = monthMap.get(monthKey) || { income: 0, expense: 0 };
+      month.expense += amount;
+      monthMap.set(monthKey, month);
+      
+      const category = txn.category || "Lainnya";
+      categoryMap.set(category, (categoryMap.get(category) || 0) + amount);
+    }
+  });
+
+  const categoryData = Array.from(categoryMap.entries())
+    .map(([name, value]) => ({ name, value: normalizeAmount(value) }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8);
+
+  const sortedMonths = Array.from(monthMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-6);
+
+  const monthlyData = sortedMonths.map(([key, data]) => {
+    const [year, month] = key.split("-");
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    const monthLabel = date.toLocaleDateString("id-ID", { month: "short" });
+    
+    return {
+      month: monthLabel,
+      income: normalizeAmount(data.income),
+      expense: normalizeAmount(data.expense),
+      net: normalizeAmount(data.income - data.expense),
+    };
+  });
+
+  const transactionCount = allTransactions.length;
+  const netAmount = normalizeAmount(totalIncome - totalExpense);
+  const avgTransaction = transactionCount > 0 ? normalizeAmount((totalIncome + totalExpense) / transactionCount) : 0;
+
+  return {
+    stats: {
+      totalIncome: normalizeAmount(totalIncome),
+      totalExpense: normalizeAmount(totalExpense),
+      netAmount,
+      transactionCount,
+      avgTransaction,
+    },
+    categoryData,
+    monthlyData,
+  };
 }

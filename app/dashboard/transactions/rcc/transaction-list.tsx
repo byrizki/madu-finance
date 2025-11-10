@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowDownRight } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { ArrowDownRight, Loader2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -22,6 +23,9 @@ interface TransactionListProps {
   accountSlug?: string;
   onEditTransaction?: (transaction: TransactionItem) => void;
   onDeleteTransaction?: (transaction: TransactionItem) => void;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
 }
 
 export function TransactionList({
@@ -31,10 +35,39 @@ export function TransactionList({
   accountSlug,
   onEditTransaction,
   onDeleteTransaction,
+  onLoadMore,
+  hasMore,
+  isLoadingMore,
 }: TransactionListProps) {
   const grouped = groupTransactionsByBucket(filteredTransactions);
   const hasTransactions = filteredTransactions.length > 0;
   const queryClient = useQueryClient();
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Intersection Observer for automatic infinite scroll
+  useEffect(() => {
+    if (!hasMore || !onLoadMore || isLoadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          onLoadMore();
+        }
+      },
+      { threshold: 0.1, rootMargin: "100px" }
+    );
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [hasMore, onLoadMore, isLoadingMore]);
 
   const updateMutation = useMutation({
     mutationFn: async ({ transaction, slug }: { transaction: TransactionItem; slug: string }) => {
@@ -144,31 +177,44 @@ export function TransactionList({
           </CardContent>
         </Card>
       ) : (
-        Object.entries(grouped)
-          .filter(([, items]) => items.length > 0)
-          .map(([bucket, items]) => (
-            <div key={bucket} className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="rounded-full px-2 py-0.5 text-[11px]">
-                    {bucketLabels[bucket as keyof typeof bucketLabels]}
-                  </Badge>
-                  <span className="text-[11px] text-muted-foreground">{items.length} transaksi</span>
+        <>
+          {Object.entries(grouped)
+            .filter(([, items]) => items.length > 0)
+            .map(([bucket, items]) => (
+              <div key={bucket} className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="rounded-full px-2 py-0.5 text-[11px]">
+                      {bucketLabels[bucket as keyof typeof bucketLabels]}
+                    </Badge>
+                    <span className="text-[11px] text-muted-foreground">{items.length} transaksi</span>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  {items.map((transaction) => (
+                    <TransactionCard
+                      key={transaction.id}
+                      transaction={transaction}
+                      accountSlug={accountSlug}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                    />
+                  ))}
                 </div>
               </div>
-              <div className="space-y-1.5">
-                {items.map((transaction) => (
-                  <TransactionCard
-                    key={transaction.id}
-                    transaction={transaction}
-                    accountSlug={accountSlug}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </div>
+            ))}
+          {/* Intersection Observer Target */}
+          {hasMore && (
+            <div ref={loadMoreRef} className="flex justify-center py-4">
+              {isLoadingMore && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Memuat transaksi...</span>
+                </div>
+              )}
             </div>
-          ))
+          )}
+        </>
       )}
     </section>
   );
