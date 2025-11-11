@@ -28,7 +28,7 @@ import {
   type TransactionFormWalletOption,
 } from "@/components/transactions/transaction-form";
 import type { TransactionItem } from "@/hooks/use-transactions";
-import { cn, formatCurrency, getRelativeTime } from "@/lib/utils";
+import { cn, formatCurrency, formatDate, getRelativeTime } from "@/lib/utils";
 import { useWallets } from "@/hooks/use-wallets";
 
 interface TransactionCardProps {
@@ -329,7 +329,7 @@ export function TransactionCard({ transaction, className, onEdit, onDelete, acco
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
-                {getRelativeTime(occurredAt)}
+                {formatDate(occurredAt)}
               </span>
               <span className="flex items-center gap-1">
                 <User className="h-3.5 w-3.5" />
@@ -338,10 +338,6 @@ export function TransactionCard({ transaction, className, onEdit, onDelete, acco
               <Badge variant="outline" className="rounded-full px-2 py-0.5 text-[11px]">
                 {isIncome ? "Pemasukan" : "Pengeluaran"}
               </Badge>
-              <span className="flex items-center gap-1">
-                <Wallet className="h-3.5 w-3.5" />
-                {transaction.wallet?.name ?? transaction.walletId ?? "-"}
-              </span>
             </div>
           </div>
 
@@ -364,7 +360,7 @@ export function TransactionCard({ transaction, className, onEdit, onDelete, acco
             {transaction.walletId ? (
               <div className="space-y-1">
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground/70">Wallet</p>
-                <p className="text-foreground/90">{transaction.walletId}</p>
+                <p className="text-foreground/90">{transaction.wallet?.name || transaction.walletId}</p>
               </div>
             ) : null}
           </div>
