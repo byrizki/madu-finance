@@ -3,13 +3,12 @@
     "short_name": "byMADU",
     "description": "Aplikasi keuangan personal untuk mengelola anggaran dan transaksi Anda.",
     "lang": "id",
-    "id": "/",
-    "start_url": "/",
-    "scope": "/",
+    "id": "/dashboard",
+    "start_url": "/dashboard",
+    "scope": "/dashboard",
     "display": "standalone",
     "orientation": "portrait",
     "background_color": "#ffffff",
-    "theme_color": "#00afcb",
     "icons": [
       {
         "src": "/android-chrome-192x192.png",
