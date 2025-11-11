@@ -176,12 +176,10 @@ export function TransactionOverview({ accountSlug }: TransactionOverviewProps) {
   return (
     <div className="space-y-4">
       {/* Month Range Filter */}
-      <Card className="border-border/50">
-        <CardContent className="flex items-center justify-between px-3 py-2">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Calendar className="h-3.5 w-3.5" />
-            <span className="font-medium">Periode</span>
-          </div>
+      <div className="flex flex-row justify-end">
+      <Card className="border-border/50 py-1">
+        <CardContent className="flex items-center justify-between px-3 py-2 gap-3">
+          <Calendar className="h-3.5 w-3.5" />
           <Select value={monthRange.toString()} onValueChange={(value) => setMonthRange(Number(value))}>
             <SelectTrigger className="w-[140px] h-7 text-xs border-0 bg-muted/50">
               <SelectValue />
@@ -196,6 +194,7 @@ export function TransactionOverview({ accountSlug }: TransactionOverviewProps) {
           </Select>
         </CardContent>
       </Card>
+      </div>
 
       {/* Stats Cards - Mobile First 2 Column Grid */}
       <div className="grid gap-3 grid-cols-2">
