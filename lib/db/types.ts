@@ -5,6 +5,7 @@ import {
   budgets,
   budgetPeriodEnum,
   budgetStatusEnum,
+  customStatCards,
   installments,
   installmentStatusEnum,
   members,
@@ -29,6 +30,7 @@ export type WalletRecord = InferSelectModel<typeof wallets>;
 export type BudgetRecord = InferSelectModel<typeof budgets>;
 export type InstallmentRecord = InferSelectModel<typeof installments>;
 export type TransactionRecord = InferSelectModel<typeof transactions>;
+export type CustomStatCardRecord = InferSelectModel<typeof customStatCards>;
 
 export type SharedAccountRow = SerializeDates<SharedAccountRecord>;
 export type AccountMemberRow = SerializeDates<AccountMemberRecord>;
@@ -38,6 +40,7 @@ export type WalletSummary = Pick<WalletRecord, "id" | "name" | "type" | "color">
 export type BudgetRow = SerializeDates<BudgetRecord>;
 export type InstallmentRow = SerializeDates<InstallmentRecord>;
 export type TransactionRow = SerializeDates<TransactionRecord>;
+export type CustomStatCardRow = SerializeDates<CustomStatCardRecord>;
 export type TransactionActivityRecord = InferSelectModel<typeof transactionActivities>;
 export type TransactionActivityRow = SerializeDates<TransactionActivityRecord>;
 export type TransactionActivityAction = (typeof transactionActivityActionEnum.enumValues)[number];

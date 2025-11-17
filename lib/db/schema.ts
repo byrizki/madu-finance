@@ -159,6 +159,22 @@ export const installments = pgTable("installments", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }).enableRLS();
 
+export const customStatCards = pgTable("custom_stat_cards", {
+  id: uuid("id")
+    .default(sql`gen_random_uuid()`)
+    .primaryKey(),
+  accountId: uuid("account_id")
+    .notNull()
+    .references(() => sharedAccounts.id, { onDelete: "cascade", onUpdate: "cascade" }),
+  name: text("name").notNull(),
+  type: transactionTypeEnum("type").notNull(),
+  categories: jsonb("categories").notNull(),
+  color: text("color").default("emerald"),
+  icon: text("icon"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}).enableRLS();
+
 export const membersRelations = relations(members, ({ many }) => ({
   memberships: many(accountMembers),
   transactions: many(transactions),
@@ -176,6 +192,7 @@ export const sharedAccountsRelations = relations(sharedAccounts, ({ many, one })
   transactions: many(transactions),
   budgets: many(budgets),
   installments: many(installments),
+  customStatCards: many(customStatCards),
 }));
 
 export const accountMembersRelations = relations(accountMembers, ({ one }) => ({
@@ -233,6 +250,13 @@ export const budgetsRelations = relations(budgets, ({ one }) => ({
 export const installmentsRelations = relations(installments, ({ one }) => ({
   account: one(sharedAccounts, {
     fields: [installments.accountId],
+    references: [sharedAccounts.id],
+  }),
+}));
+
+export const customStatCardsRelations = relations(customStatCards, ({ one }) => ({
+  account: one(sharedAccounts, {
+    fields: [customStatCards.accountId],
     references: [sharedAccounts.id],
   }),
 }));

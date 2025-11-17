@@ -1,13 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowDownRight, ArrowUpRight, TrendingUp, TrendingDown, Calendar } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, TrendingUp, TrendingDown, Calendar, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useTransactionOverview } from "@/hooks/use-transactions";
+import { Button } from "@/components/ui/button";
+import { useTransactionOverview, useTransactions, type TransactionItem } from "@/hooks/use-transactions";
 import { MaskedValue } from "@/components/dashboard/masked-value";
+import { CreateStatCardDialog } from "./create-stat-card-dialog";
+import { CustomStatCard } from "./custom-stat-card";
+import type { CustomStatCard as CustomStatCardType, CreateCustomStatCard, StatCardValue } from "./custom-stat-types";
+import {
+  calculateAllStatCards,
+  getAvailableCategories,
+} from "./custom-stat-utils";
+import {
+  useCustomStatCards,
+  useCreateCustomStatCard,
+  useUpdateCustomStatCard,
+  useDeleteCustomStatCard,
+} from "@/hooks/use-custom-stat-cards";
 
 interface TransactionOverviewProps {
   accountSlug?: string;
@@ -109,11 +123,17 @@ const CustomBarTooltip = ({ active, payload, label, isMobile }: CustomTooltipPro
 };
 
 export function TransactionOverview({ accountSlug }: TransactionOverviewProps) {
-  const [monthRange, setMonthRange] = useState<number>(6);
+  const [monthRange, setMonthRange] = useState<number>(1);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  
+  const [editingCard, setEditingCard] = useState<CustomStatCardType | undefined>();
+
   const { data: overview, isLoading } = useTransactionOverview(accountSlug, monthRange);
+  const { data: transactionsData } = useTransactions(accountSlug, 1000); // Get more transactions for stat calculations
+  const { data: customStatCards = [], isLoading: isLoadingCards, error: cardsError, refetch: refetchCards } = useCustomStatCards(accountSlug);
+  const createCardMutation = useCreateCustomStatCard(accountSlug);
+  const updateCardMutation = useUpdateCustomStatCard(accountSlug);
+  const deleteCardMutation = useDeleteCustomStatCard(accountSlug);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 640);
@@ -122,11 +142,12 @@ export function TransactionOverview({ accountSlug }: TransactionOverviewProps) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+
   const categoryData = overview?.categoryData.map((item, index) => ({
     ...item,
     color: COLORS[index % COLORS.length],
   })) ?? [];
-  
+
   const monthlyData = overview?.monthlyData ?? [];
   const stats = overview?.stats ?? {
     totalIncome: 0,
@@ -134,6 +155,42 @@ export function TransactionOverview({ accountSlug }: TransactionOverviewProps) {
     netAmount: 0,
     transactionCount: 0,
     avgTransaction: 0,
+  };
+
+  // Get all transactions for stat calculations
+  const allTransactions = useMemo(() => {
+    if (!transactionsData?.pages) return [];
+    return transactionsData.pages.flatMap(page => page.items);
+  }, [transactionsData]);
+
+  // Calculate custom stat card values
+  const statCardValues = useMemo(() => {
+    return calculateAllStatCards(customStatCards, allTransactions, monthRange);
+  }, [customStatCards, allTransactions, monthRange]);
+
+  // Get available categories for the dialog
+  const availableCategories = useMemo(() => {
+    return getAvailableCategories(allTransactions);
+  }, [allTransactions]);
+
+  const handleCreateStatCard = (newCard: CreateCustomStatCard) => {
+    createCardMutation.mutate(newCard);
+  };
+
+  const handleUpdateStatCard = (updatedCard: CustomStatCardType) => {
+    updateCardMutation.mutate(updatedCard);
+    setEditingCard(undefined);
+  };
+
+  const handleEditStatCard = (cardId: string) => {
+    const card = customStatCards.find(c => c.id === cardId);
+    if (card) {
+      setEditingCard(card);
+    }
+  };
+
+  const handleDeleteStatCard = (cardId: string) => {
+    deleteCardMutation.mutate(cardId);
   };
 
   if (isLoading) {
@@ -175,92 +232,106 @@ export function TransactionOverview({ accountSlug }: TransactionOverviewProps) {
 
   return (
     <div className="space-y-4">
-      {/* Month Range Filter */}
-      <div className="flex flex-row justify-end">
-      <Card className="border-border/50 py-1">
-        <CardContent className="flex items-center justify-between px-3 py-2 gap-3">
-          <Calendar className="h-3.5 w-3.5" />
-          <Select value={monthRange.toString()} onValueChange={(value) => setMonthRange(Number(value))}>
-            <SelectTrigger className="w-[140px] h-7 text-xs border-0 bg-muted/50">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">1 bulan</SelectItem>
-              <SelectItem value="3">3 bulan</SelectItem>
-              <SelectItem value="6">6 bulan</SelectItem>
-              <SelectItem value="12">12 bulan</SelectItem>
-              <SelectItem value="0">Semua</SelectItem>
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+      <div className="flex justify-end flex-row gap-2 items-center">
+        {/* Month Range Selector with Create Button */}
+        <Select value={monthRange.toString()} onValueChange={(value) => setMonthRange(parseInt(value))}>
+          <SelectTrigger className="bg-card w-[140px] h-8">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">1 bulan</SelectItem>
+            <SelectItem value="3">3 bulan</SelectItem>
+            <SelectItem value="6">6 bulan</SelectItem>
+            <SelectItem value="12">12 bulan</SelectItem>
+            <SelectItem value="0">Semua</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <CreateStatCardDialog
+          availableCategories={availableCategories}
+          onCreateCard={handleCreateStatCard}
+          onUpdateCard={handleUpdateStatCard}
+          editingCard={editingCard}
+          isLoading={createCardMutation.isPending || updateCardMutation.isPending}
+          trigger={
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8"
+              disabled={createCardMutation.isPending || updateCardMutation.isPending}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Buat Stat Card
+            </Button>
+          }
+        />
       </div>
 
-      {/* Stats Cards - Mobile First 2 Column Grid */}
-      <div className="grid gap-3 grid-cols-2">
-        <Card className="border-border/50 py-3">
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between mb-2">
-              <span className="text-xs font-medium text-muted-foreground">Pemasukan</span>
-              <ArrowUpRight className="h-3.5 w-3.5 text-emerald-500" />
-            </div>
-            <MaskedValue
-              value={stats.totalIncome}
-              className="text-lg font-bold text-emerald-600 dark:text-emerald-400"
-              compact
-            />
-          </CardContent>
-        </Card>
+      {/* Custom Stats Cards */}
+      <div className="space-y-4">
 
-        <Card className="border-border/50 py-3">
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between mb-2">
-              <span className="text-xs font-medium text-muted-foreground">Pengeluaran</span>
-              <ArrowDownRight className="h-3.5 w-3.5 text-rose-500" />
-            </div>
-            <MaskedValue
-              value={stats.totalExpense}
-              className="text-lg font-bold text-rose-600 dark:text-rose-400"
-              compact
+        <div className="grid gap-3 grid-cols-2">
+          {(isLoadingCards ? [] : statCardValues).map((statCard) => (
+            <CustomStatCard
+              key={statCard.id}
+              statCard={statCard}
+              onDelete={handleDeleteStatCard}
+              onEdit={handleEditStatCard}
+              showDeleteButton={true}
+              showEditButton={true}
+              isDeleting={deleteCardMutation.isPending && deleteCardMutation.variables === statCard.id}
             />
-          </CardContent>
-        </Card>
+          ))}
 
-        <Card className="border-border/50 py-3">
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between mb-2">
-              <span className="text-xs font-medium text-muted-foreground">Net</span>
-              {stats.netAmount >= 0 ? (
-                <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-              ) : (
-                <TrendingDown className="h-3.5 w-3.5 text-rose-500" />
-              )}
-            </div>
-            <MaskedValue
-              value={stats.netAmount}
-              className={`text-lg font-bold ${
-                stats.netAmount >= 0
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-rose-600 dark:text-rose-400"
-              }`}
-              compact
-            />
-          </CardContent>
-        </Card>
+          {/* Loading state for stat cards */}
+          {isLoadingCards && (
+            Array.from({ length: 2 }).map((_, i) => (
+              <Card key={`loading-${i}`} className="border-border/50 py-3">
+                <CardContent className="p-4">
+                  <Skeleton className="h-3 w-16 mb-2" />
+                  <Skeleton className="h-6 w-20" />
+                </CardContent>
+              </Card>
+            ))
+          )}
 
-        <Card className="border-border/50 py-3">
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between mb-2">
-              <span className="text-xs font-medium text-muted-foreground">Rata-rata</span>
+          {/* Error state */}
+          {cardsError && (
+            <div className="col-span-2 flex flex-col items-center justify-center py-8 text-center border-2 border-dashed border-destructive/20 rounded-lg">
+              <p className="text-sm text-destructive mb-2">
+                Gagal memuat stat cards
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetchCards()}
+                className="text-xs"
+              >
+                Coba Lagi
+              </Button>
             </div>
-            <MaskedValue
-              value={stats.avgTransaction}
-              className="text-lg font-bold"
-              compact
-            />
-            <p className="text-xs text-muted-foreground mt-1">{stats.transactionCount} transaksi</p>
-          </CardContent>
-        </Card>
+          )}
+
+          {/* Empty state when no stat cards */}
+          {!cardsError && statCardValues.length === 0 && !isLoadingCards && (
+            <div className="col-span-2 flex flex-col items-center justify-center py-8 text-center border-2 border-dashed border-border/50 rounded-lg">
+              <p className="text-sm text-muted-foreground mb-2">
+                Belum ada stat card kustom
+              </p>
+              <CreateStatCardDialog
+                availableCategories={availableCategories}
+                onCreateCard={handleCreateStatCard}
+                trigger={
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                    Buat Stat Card Pertama
+                  </Button>
+                }
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Charts - 2 Column on Large Screen */}
@@ -310,7 +381,7 @@ export function TransactionOverview({ accountSlug }: TransactionOverviewProps) {
                       layout={isMobile ? "horizontal" : "vertical"}
                       verticalAlign={isMobile ? "bottom" : "middle"}
                       align={isMobile ? "center" : "right"}
-                      wrapperStyle={{ 
+                      wrapperStyle={{
                         fontSize: isMobile ? "11px" : "12px",
                         paddingLeft: isMobile ? 0 : "20px"
                       }}
