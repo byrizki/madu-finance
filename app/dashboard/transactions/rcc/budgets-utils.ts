@@ -21,24 +21,19 @@ export const formatDate = (dateString?: string | null) => {
 };
 
 export const getTransactionBucket = (dateString: string): TransactionBucket => {
-  const now = new Date();
   const date = new Date(dateString);
-  const diffInMs = now.getTime() - date.getTime();
-  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-
-  if (diffInDays <= 0) return "today";
-  if (diffInDays === 1) return "yesterday";
-  if (diffInDays <= 7) return "last7";
-  if (diffInDays <= 30) return "last30";
-  return "older";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
 };
 
-export const bucketLabels: Record<TransactionBucket, string> = {
-  today: "Hari ini",
-  yesterday: "Kemarin",
-  last7: "7 hari terakhir",
-  last30: "30 hari terakhir",
-  older: "Lebih lama",
+export const getBucketLabel = (bucket: TransactionBucket): string => {
+  const [year, month] = bucket.split("-");
+  const date = new Date(parseInt(year), parseInt(month) - 1);
+  return date.toLocaleDateString("id-ID", {
+    month: "long",
+    year: "numeric",
+  });
 };
 
 export const getBudgetStatus = (amount: number, spent: number): BudgetStatus => {
@@ -134,19 +129,30 @@ export const calculateBudgetSummary = (budgetList: BudgetItem[]): BudgetSummary 
 };
 
 export const groupTransactionsByBucket = (transactions: TransactionItem[]) => {
-  return transactions.reduce<Record<TransactionBucket, TransactionItem[]>>(
-    (accumulator, transaction) => {
-      const occurredAt = transaction.occurredAt ?? transaction.createdAt;
-      const bucket = occurredAt ? getTransactionBucket(occurredAt) : "older";
-      accumulator[bucket].push(transaction);
-      return accumulator;
-    },
-    {
-      today: [],
-      yesterday: [],
-      last7: [],
-      last30: [],
-      older: [],
-    },
-  );
+  const grouped: Record<string, TransactionItem[]> = {};
+  
+  transactions.forEach((transaction) => {
+    const occurredAt = transaction.occurredAt ?? transaction.createdAt;
+    if (occurredAt) {
+      const bucket = getTransactionBucket(occurredAt);
+      if (!grouped[bucket]) {
+        grouped[bucket] = [];
+      }
+      grouped[bucket].push(transaction);
+    }
+  });
+  
+  // Sort buckets by date (newest first)
+  const sortedBuckets = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+  const sortedGrouped: Record<string, TransactionItem[]> = {};
+  
+  sortedBuckets.forEach((bucket) => {
+    sortedGrouped[bucket] = grouped[bucket].sort((a, b) => {
+      const dateA = new Date(a.occurredAt ?? a.createdAt);
+      const dateB = new Date(b.occurredAt ?? b.createdAt);
+      return dateB.getTime() - dateA.getTime();
+    });
+  });
+  
+  return sortedGrouped;
 };

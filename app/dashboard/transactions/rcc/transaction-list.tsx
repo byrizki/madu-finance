@@ -15,7 +15,7 @@ import { TransactionCard } from "@/components/transactions/transaction-card";
 import type { TransactionItem } from "@/hooks/use-transactions";
 import { deleteTransaction, updateTransaction } from "@/utils/transactions-service";
 
-import { bucketLabels, groupTransactionsByBucket } from "./budgets-utils";
+import { getBucketLabel, groupTransactionsByBucket } from "./budgets-utils";
 
 interface TransactionListProps {
   filteredTransactions: TransactionItem[];
@@ -203,7 +203,7 @@ export function TransactionList({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="rounded-full px-2 py-0.5 text-[11px]">
-                      {bucketLabels[bucket as keyof typeof bucketLabels]}
+                      {getBucketLabel(bucket)}
                     </Badge>
                     <span className="text-[11px] text-muted-foreground">{items.length} transaksi</span>
                   </div>
@@ -216,6 +216,7 @@ export function TransactionList({
                       accountSlug={accountSlug}
                       onEdit={handleEdit}
                       onDelete={handleDelete}
+                      relevantTime={false}
                     />
                   ))}
                 </div>

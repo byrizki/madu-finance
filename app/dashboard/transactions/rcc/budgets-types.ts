@@ -17,7 +17,7 @@ export interface BudgetMetric {
   accent: string;
 }
 
-export type TransactionBucket = "today" | "yesterday" | "last7" | "last30" | "older";
+export type TransactionBucket = string; // Month-Year format: "2025-01", "2024-12", etc.
 
 export interface FilterSummary {
   total: number;

@@ -37,6 +37,7 @@ interface TransactionCardProps {
   onEdit?: (updated: TransactionItem) => void | Promise<void>;
   onDelete?: (transaction: TransactionItem) => void | Promise<void>;
   accountSlug?: string;
+  relevantTime?: boolean;
 }
 
 const formatDateInputValue = (value: string | null | undefined) => {
@@ -73,7 +74,7 @@ const formatDateTime = (value: string | null | undefined) => {
   }
 };
 
-export function TransactionCard({ transaction, className, onEdit, onDelete, accountSlug }: TransactionCardProps) {
+export function TransactionCard({ transaction, className, onEdit, onDelete, accountSlug, relevantTime = true }: TransactionCardProps) {
   const { showValues } = useShowValues();
   const isIncome = transaction.type === "income";
   const Icon = isIncome ? ArrowUpRight : ArrowDownRight;
@@ -279,7 +280,7 @@ export function TransactionCard({ transaction, className, onEdit, onDelete, acco
                 </Badge>
                 <span className="flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5" />
-                  {getRelativeTime(occurredAt)}
+                  {relevantTime ? getRelativeTime(occurredAt) : formatDate(occurredAt)}
                 </span>
                 <span className="flex items-center gap-1">
                   <User className="h-3.5 w-3.5" />
